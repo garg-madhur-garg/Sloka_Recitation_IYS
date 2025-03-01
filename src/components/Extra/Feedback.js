@@ -1,20 +1,14 @@
 import React from "react";
 import {
-  IonButtons,
-  IonContent,
-  IonHeader,
-  IonMenu,
-  IonMenuButton,
+
   IonPage,
-  IonSearchbar,
-  IonTitle,
-  IonToolbar,
+
 } from "@ionic/react";
 function Feedback() {
   return (
-    <>
+    <IonPage>
       This is FeedBack Page
-    </>
+    </IonPage>
   );
 }
 export default Feedback;

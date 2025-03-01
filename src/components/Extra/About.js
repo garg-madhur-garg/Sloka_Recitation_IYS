@@ -1,20 +1,13 @@
 import React from "react";
 import {
-  IonButtons,
-  IonContent,
-  IonHeader,
-  IonMenu,
-  IonMenuButton,
-  IonPage,
-  IonSearchbar,
-  IonTitle,
-  IonToolbar,
+  IonPage
 } from "@ionic/react";
 function About() {
   return (
-    <>
+    
+    <IonPage>
       This is About Page
-    </>
+      </IonPage>
   );
 }
 export default About;

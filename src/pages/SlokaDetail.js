@@ -1,28 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  IonPage, 
-  IonHeader, 
-  IonToolbar, 
-  IonTitle, 
-  IonContent, 
-  IonInput, 
-  IonTextarea, 
-  IonButton, 
+import React, { useState, useEffect } from "react";
+import {
+  IonPage,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonInput,
+  IonTextarea,
+  IonButton,
   IonText,
   IonBackButton,
-  IonButtons
-} from '@ionic/react';
-import { Storage } from '@capacitor/storage';
-import { useHistory, useLocation } from 'react-router-dom';
-import CustomAlert from '../components/CustomAlert';
-import UploadAudio from '../components/UploadAudio';
+  IonButtons,
+  IonDatetimeButton,
+  IonItemDivider,
+} from "@ionic/react";
+import { Storage } from "@capacitor/storage";
+import { useHistory, useLocation } from "react-router-dom";
+import { isPlatform } from "@ionic/react";
+import CustomAlert from "../components/CustomAlert";
+import UploadAudio from "../components/UploadAudio";
 
 const SlokaDetail = () => {
   const history = useHistory();
   const location = useLocation();
 
-  // Retrieve the sloka passed in state; if missing, navigate back.
-  const initialSloka = location.state && location.state.sloka ? location.state.sloka : null;
+  // Retrieve the sloka from navigation state; if missing, navigate back.
+  const initialSloka =
+    location.state && location.state.sloka ? location.state.sloka : null;
   useEffect(() => {
     if (!initialSloka) {
       // alert("No sloka provided");
@@ -32,22 +36,28 @@ const SlokaDetail = () => {
 
   // Hide the tab bar on this page.
   useEffect(() => {
-    const tabBar = document.querySelector('ion-tab-bar');
+    const tabBar = document.querySelector("ion-tab-bar");
     if (tabBar) {
-      tabBar.style.display = 'none';
+      tabBar.style.display = "none";
     }
     return () => {
       if (tabBar) {
-        tabBar.style.display = '';
+        tabBar.style.display = "";
       }
     };
   }, []);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editedTitle, setEditedTitle] = useState(initialSloka ? initialSloka.title : '');
-  const [editedText, setEditedText] = useState(initialSloka ? initialSloka.text : '');
+  const [editedTitle, setEditedTitle] = useState(
+    initialSloka ? initialSloka.title : ""
+  );
+  const [editedText, setEditedText] = useState(
+    initialSloka ? initialSloka.text : ""
+  );
   const [recording, setRecording] = useState(null);
-  const [audioUri, setAudioUri] = useState(initialSloka ? initialSloka.audioUri : '');
+  const [audioUri, setAudioUri] = useState(
+    initialSloka ? initialSloka.audioUri : ""
+  );
   const [alertVisible, setAlertVisible] = useState(false);
   const [sound, setSound] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -75,38 +85,58 @@ const SlokaDetail = () => {
     }
   };
 
-  // Start recording using MediaRecorder API
+  // Start recording using native plugin if available; fallback to MediaRecorder on web
   const startRecording = async () => {
     if (!validateFields()) return;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      let chunks = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunks.push(e.data);
-        }
-      };
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        const uri = URL.createObjectURL(blob);
-        setAudioUri(uri);
-        setRecording(null);
-      };
-      recorder.start();
-      setRecording(recorder);
-    } catch (err) {
-      console.log("Error in startRecording", err);
+    if (isPlatform("hybrid")) {
+      try {
+        // Use Cordova Media Capture plugin (cordova-plugin-media-capture)
+        window.navigator.device.capture.captureAudio(
+          (mediaFiles) => {
+            const file = mediaFiles[0];
+            const uri = file.fullPath || file.localURL;
+            setAudioUri(uri);
+          },
+          (error) => {
+            console.error("Error capturing audio", error);
+          },
+          { limit: 1, duration: 60 }
+        );
+      } catch (e) {
+        console.error("Error starting native recording", e);
+      }
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
+        const recorder = new MediaRecorder(stream);
+        let chunks = [];
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            chunks.push(e.data);
+          }
+        };
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: "audio/webm" });
+          const uri = URL.createObjectURL(blob);
+          setAudioUri(uri);
+          setRecording(null);
+        };
+        recorder.start();
+        setRecording(recorder);
+      } catch (error) {
+        console.error("Error starting web recording", error);
+      }
     }
   };
 
+  // Stop recording using native plugin if applicable; fallback to MediaRecorder on web
   const stopRecording = async () => {
-    if (!recording) return;
-    try {
+    if (isPlatform("hybrid") && recording === "native") {
+      // Native plugin would have its own stop mechanism – adjust as needed.
+    } else if (recording) {
       recording.stop();
-      // onstop handler will update audioUri and reset recording state.
-    } catch (err) {
-      console.log("Error in stopRecording", err);
       setRecording(null);
     }
   };
@@ -120,10 +150,18 @@ const SlokaDetail = () => {
       audioUri: audioUri,
     };
 
-    const { value } = await Storage.get({ key: 'slokas' });
+    const { value } = await Storage.get({ key: "slokas" });
     let slokas = value ? JSON.parse(value) : [];
-    slokas = slokas.map(item => item.id === initialSloka.id ? updatedSloka : item);
-    await Storage.set({ key: 'slokas', value: JSON.stringify(slokas) });
+    slokas = slokas.map((item) =>
+      item.id === initialSloka.id ? updatedSloka : item
+    );
+    await Storage.set({ key: "slokas", value: JSON.stringify(slokas) });
+
+    // Clear all input fields after saving changes
+    setEditedTitle("");
+    setEditedText("");
+    setAudioUri("");
+
     history.goBack();
   };
 
@@ -152,14 +190,18 @@ const SlokaDetail = () => {
 
   const UploadAudioComponent = () => {
     if (!isEditing) return null;
-    return <UploadAudio setAudioUri={setAudioUri} validateFields={validateFields} />;
+    return (
+      <UploadAudio setAudioUri={setAudioUri} validateFields={validateFields} />
+    );
   };
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (recording) {
-        recording.stop();
+        if (!isPlatform("hybrid")) {
+          recording.stop();
+        }
       }
     };
   }, [recording]);
@@ -173,70 +215,90 @@ const SlokaDetail = () => {
   }, [sound]);
 
   return (
-    <IonPage>
+    <IonPage className="dark-bg">
       <IonHeader>
         <IonToolbar color="primary">
           <IonButtons slot="start">
             <IonBackButton defaultHref="/home" />
           </IonButtons>
-          <IonTitle>Sloka Detail</IonTitle>
+          <IonTitle className="header-title">Sloka Detail</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding" style={{ background: '#121212' }}>
+      <IonContent
+        className="ion-padding dark-bg"
+        style={{ background: "#121212" }}
+      >
+        <IonItemDivider>
         {isEditing ? (
           <IonInput
             value={editedTitle}
-            placeholder="Title"
-            onIonChange={e => setEditedTitle(e.detail.value)}
+            placeholder="Sloka"
+            onIonChange={(e) => setEditedTitle(e.detail.value)}
             clearInput
             className="ion-margin-bottom"
           />
         ) : (
-          <IonText className="ion-text-center" color="primary" style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>
-            {initialSloka ? initialSloka.title : ''}
+          <IonText
+            className="ion-text-center primary-text"
+            style={{
+              fontSize: "25px",
+              fontWeight: "bold",
+              margin: "5px",
+              color:"Black",
+              textAlign : "left",
+              border: "3px solid green"
+            }}
+          >
+            {initialSloka ? initialSloka.title : ""}
           </IonText>
         )}
-
+        </IonItemDivider>
+        <IonItemDivider>
         {isEditing ? (
           <IonTextarea
             value={editedText}
             placeholder="Sloka Text"
-            onIonChange={e => setEditedText(e.detail.value)}
+            onIonChange={(e) => setEditedText(e.detail.value)}
             autoGrow
             className="ion-margin-bottom"
-            style={{ height: '200px' }}
+            style={{ height: "200px"}}
           />
         ) : (
-          <IonText className="ion-text-center" color="light" style={{ fontSize: '18px', marginBottom: '30px' }}>
-            {initialSloka ? initialSloka.text : ''}
-          </IonText>
-        )}
 
-        <div className="ion-margin-vertical" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <IonText className="ion-text-center" color="Black" style={{ fontSize: "20px", marginTop:"20px",marginBottom:"10px", color:"Black", lineHeight: "30px",  whiteSpace: 'pre-line'}}>
+            {initialSloka ? initialSloka.text : ""}
+          </IonText>
+
+        )}
+        </IonItemDivider>
+        <div
+          className="ion-margin-vertical"
+          style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+        >
           {isEditing ? (
-            <IonButton 
+            <IonButton
               expand="block"
-              color={recording ? 'danger' : 'primary'}
+              color={recording ? "danger" : "primary"}
               onClick={recording ? stopRecording : startRecording}
             >
-              {recording ? '⏹ Stop Recording' : '🎤 Record Audio'}
+              {recording ? "⏹ Stop Recording" : "🎤 Record Audio"}
             </IonButton>
           ) : (
-            <IonButton 
+            <IonButton
               expand="block"
-              color={isPlaying ? 'danger' : 'primary'}
+              color={isPlaying ? "danger" : "primary"}
               onClick={handlePlayback}
             >
-              {isPlaying ? '⏹ Stop' : '▶ Play Loop'}
+              {isPlaying ? "⏹ Stop" : "▶ Play Loop"}
             </IonButton>
           )}
           <UploadAudioComponent />
-          <IonButton 
+          <IonButton
             expand="block"
             color="secondary"
             onClick={handleEditToggle}
           >
-            {isEditing ? '💾 Save' : '✏️ Edit'}
+            {isEditing ? "💾 Save" : "✏️ Edit"}
           </IonButton>
         </div>
 
@@ -246,7 +308,7 @@ const SlokaDetail = () => {
           message="Please fill all fields"
           buttons={[
             {
-              text: 'OK',
+              text: "OK",
               onClick: () => setAlertVisible(false),
             },
           ]}
@@ -257,5 +319,4 @@ const SlokaDetail = () => {
 };
 
 export default SlokaDetail;
-
 

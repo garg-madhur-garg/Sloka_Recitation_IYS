@@ -13,16 +13,11 @@ const SlokaCard = ({ sloka, serialNo, onDelete, currentPlayingId, onPlay }) => {
         await stopAudio();
         return;
       }
-
-      // Stop any currently playing audio first
       if (currentPlayingId) {
         onPlay(null);
-        await new Promise(resolve => setTimeout(resolve, 200)); // small delay
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
-
       onPlay(sloka.id);
-
-      // Create a new Audio instance, set it to loop, and start playback
       const newSound = new Audio(sloka.audioUri);
       newSound.loop = true;
       setSound(newSound);
@@ -41,7 +36,6 @@ const SlokaCard = ({ sloka, serialNo, onDelete, currentPlayingId, onPlay }) => {
     onPlay(null);
   };
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (sound) {
@@ -50,46 +44,33 @@ const SlokaCard = ({ sloka, serialNo, onDelete, currentPlayingId, onPlay }) => {
     };
   }, [sound]);
 
-  // Stop audio if this card is no longer marked as playing
   useEffect(() => {
     if (!isPlaying && sound) {
       stopAudio();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying]);
 
   return (
-    <IonCard style={{ backgroundColor: '#292929', borderRadius: '8px', marginBottom: '8px' }}>
-      <IonCardContent style={{ display: 'flex', alignItems: 'center', padding: '12px' }}>
-        <IonText style={{ width: '30px', fontSize: '18px', color: "#0054e9" }}>
+    <IonCard className="sloka-card" style={{ backgroundColor: "#1E1E1E", borderRadius: "8px", marginBottom: "8px"}}>
+      <IonCardContent style={{ display: "flex", alignItems: "center", padding: "12px" }}>
+        <IonText style={{ width: "30px", fontSize: "18px", color: "#BB86FC" }}>
           {serialNo}.
         </IonText>
-
         <div
-          style={{ flex: 1, margin: '0 12px', cursor: 'pointer' }}
-          onClick={() => history.push('/home/slokaDetail', { sloka })}
+          style={{ flex: 1, margin: "0 12px", cursor: "pointer" }}
+          onClick={() => history.push("/home/slokaDetail", { sloka })}
         >
           <IonText color="light">
-            <h3
-              style={{
-                margin: 0,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                color: 'white',
-                fontSize: '16px',
-              }}
-            >
+            <h3 style={{ margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "white", fontSize: "16px" }}>
               {sloka.title}
             </h3>
           </IonText>
         </div>
-
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <IonButton size="small" color={isPlaying ? 'danger' : 'primary'} shape="round" onClick={playAudio}>
-            <IonText>{isPlaying ? '⏹' : '▶'}</IonText>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <IonButton size="small" color={isPlaying ? "danger" : "primary"} onClick={playAudio}>
+            <IonText>{isPlaying ? "⏹" : "▶"}</IonText>
           </IonButton>
-          <IonButton size="small" color="danger" shape="round" onClick={onDelete}>
+          <IonButton size="small" color="danger" onClick={onDelete}>
             <IonText>🗑</IonText>
           </IonButton>
         </div>
@@ -99,5 +80,3 @@ const SlokaCard = ({ sloka, serialNo, onDelete, currentPlayingId, onPlay }) => {
 };
 
 export default SlokaCard;
-
-

@@ -1,47 +1,7 @@
-// import React from "react";
-// import { IonItem, IonLabel, IonMenu, IonPage } from "@ionic/react";
-// import About from "./Extra/About";
-// import Share from "./Extra/Share";
-// import Rate from "./Extra/Rate";
-// import Donate from "./Extra/Donate";
-// import Privacy from "./Extra/Privacy";
-// import Feedback from "./Extra/Feedback";
 
-// function MenuBar() {
-//   return (
-//     <>
-//       <IonMenu contentId="main-content">
-//         <IonItem button>
-//           <About />
-//         </IonItem>
-
-//         <IonItem button>
-//           <Share />
-//         </IonItem>
-
-//         <IonItem button>
-//           <Rate />
-//         </IonItem>
-
-//         <IonItem button>
-//           <Donate />
-//         </IonItem>
-
-//         <IonItem button>
-//           <Privacy />
-//         </IonItem>
-
-//         <IonItem button>
-//           <Feedback />
-//         </IonItem>
-//       </IonMenu>
-//     </>
-//   );
-// }
-// export default MenuBar;
 
 import React from "react";
-import { IonMenu, IonContent, IonList, IonItem, IonImg, IonItemDivider, IonLabel } from "@ionic/react";
+import { IonMenu, IonContent, IonList, IonItem, IonImg} from "@ionic/react";
 import About from "./Extra/About";
 import Share from "./Extra/Share";
 import Rate from "./Extra/Rate";
@@ -84,3 +44,30 @@ function MenuBar() {
 }
 
 export default MenuBar;
+
+// import React from "react";
+// import { IonMenu, IonHeader, IonToolbar, IonTitle, IonContent } from "@ionic/react";
+
+// function MenuBar() {
+//   return (
+//     <IonMenu contentId="main-content">
+//       <IonHeader>
+//         <IonToolbar>
+//           <IonTitle>
+//             aho bakī yaṁ stana-kāla-kūṭaṁ
+//             <br />
+//             jighāṁsayāpāyayad apy asādhvī
+//             <br />
+//             lebhe gatiṁ dhātry-ucitāṁ tato ’nyaṁ
+//             <br />
+//             kaṁ vā dayāluṁ śaraṇaṁ vrajema
+//           </IonTitle>
+//         </IonToolbar>
+//       </IonHeader>
+//       <IonContent className="ion-padding">
+//         {/* Add additional menu content if needed */}
+//       </IonContent>
+//     </IonMenu>
+//   );
+// }
+// export default MenuBar;

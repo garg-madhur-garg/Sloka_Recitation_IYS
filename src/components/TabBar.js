@@ -4,7 +4,7 @@ import { IonReactRouter } from '@ionic/react-router';
 
 import { Route, Redirect } from 'react-router';
 
-import { playCircle, radio, library, search, home, addCircle, barChart, list } from 'ionicons/icons';
+import {home, addCircle, barChart, list } from 'ionicons/icons';
 
 import HomePage from '../pages/HomePage';
 import AddSloka from '../pages/AddSloka';
@@ -17,14 +17,14 @@ import Privacy from './Extra/Privacy'
 import Terms from './Extra/Terms'
 import Rate from './Extra/Rate'
 import Share from './Extra/Share'
+import './TabBar.css'
 
 function TabBar() {
   return (
     <IonApp>
 
-    
     <IonReactRouter>
-      <IonTabs>
+      <IonTabs >
         <IonRouterOutlet>
           <Redirect exact path="/" to="/home" />
           {/*
@@ -45,8 +45,7 @@ function TabBar() {
           <Route path="/home/terms" render={() => <Terms />} exact={true} />
           <Route path="/home/feedback" render={() => <feedback />} exact={true} />
         </IonRouterOutlet>
-
-        <IonTabBar slot="bottom">
+        <IonTabBar className='ion-tab-bar' slot="bottom" color="primary" style={{}}>
           <IonTabButton tab="home" href="/home">
             <IonIcon icon={home} />
             <IonLabel>Home</IonLabel>
@@ -59,7 +58,7 @@ function TabBar() {
 
           <IonTabButton tab="selectSloka" href="/selectSloka">
             <IonIcon icon={barChart} />
-            <IonLabel>Select Sloka</IonLabel>
+            <IonLabel>Play the Sloka</IonLabel>
           </IonTabButton>
 
           <IonTabButton tab="playlist" href="/playlist">
