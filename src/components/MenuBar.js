@@ -45,29 +45,3 @@ function MenuBar() {
 
 export default MenuBar;
 
-// import React from "react";
-// import { IonMenu, IonHeader, IonToolbar, IonTitle, IonContent } from "@ionic/react";
-
-// function MenuBar() {
-//   return (
-//     <IonMenu contentId="main-content">
-//       <IonHeader>
-//         <IonToolbar>
-//           <IonTitle>
-//             aho bakī yaṁ stana-kāla-kūṭaṁ
-//             <br />
-//             jighāṁsayāpāyayad apy asādhvī
-//             <br />
-//             lebhe gatiṁ dhātry-ucitāṁ tato ’nyaṁ
-//             <br />
-//             kaṁ vā dayāluṁ śaraṇaṁ vrajema
-//           </IonTitle>
-//         </IonToolbar>
-//       </IonHeader>
-//       <IonContent className="ion-padding">
-//         {/* Add additional menu content if needed */}
-//       </IonContent>
-//     </IonMenu>
-//   );
-// }
-// export default MenuBar;

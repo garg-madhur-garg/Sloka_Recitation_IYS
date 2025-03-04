@@ -12,6 +12,7 @@ import {
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
 import { Storage } from "@capacitor/storage";
+import {VoiceRecorder} from 'capacitor-voice-recorder';
 import CustomAlert from "../components/CustomAlert";
 import UploadAudio from "../components/UploadAudio";
 
@@ -22,6 +23,7 @@ const AddSloka = () => {
   const [mediaRecorder, setMediaRecorder] = useState(null); // for web recording
   const [audioUri, setAudioUri] = useState(null);
   const [alertVisible, setAlertVisible] = useState(false);
+  const [recordingStatus, setRecordingStatus] = useState("NONE")
 
   // const validateFields = () => {
   //   const trimmedTitle = title.trim();
@@ -56,21 +58,37 @@ const AddSloka = () => {
         // Use Cordova Media Capture plugin
         // This function is available after installing cordova-plugin-media-capture:
         // npm install cordova-plugin-media-capture && npx cap sync
-        window.navigator.device.capture.captureAudio(
-          (mediaFiles) => {
-            // On success, use the first captured file's local URL
-            const file = mediaFiles[0];
-            // file.fullPath or file.localURL may be available depending on the platform
-            const uri = file.fullPath || file.localURL;
-            setAudioUri(uri);
+        
+        
+        // window.navigator.device.capture.captureAudio(
+        //   (mediaFiles) => {
+        //     // On success, use the first captured file's local URL
+        //     const file = mediaFiles[0];
+        //     // file.fullPath or file.localURL may be available depending on the platform
+        //     const uri = file.fullPath || file.localURL;
+        //     setAudioUri(uri);
 
-            saveSloka(uri);
-          },
-          (error) => {
-            console.error("Error capturing audio", error);
-          },
-          { limit: 1, duration: 60 }
-        );
+        //     saveSloka(uri);
+        //   },
+        //   (error) => {
+        //     console.error("Error capturing audio", error);
+        //   },
+        //   { limit: 1, duration: 60 }
+        // );
+
+        VoiceRecorder.canDeviceVoiceRecord().then((result) => console.log(result.value));
+
+        VoiceRecorder.startRecording()
+          .then((result) => console.log(result, 'start'))
+          .catch((error) => console.log(error));
+
+          VoiceRecorder.getCurrentStatus()
+          .then((result) => {
+            console.log(result.status);
+            setRecordingStatus('RECORDING')
+          })
+          .catch(error => console.log(error));
+
       } catch (e) {
         console.error("Error starting native recording", e);
       }
@@ -102,11 +120,43 @@ const AddSloka = () => {
     }
   };
 
+  function base64ToBlobUrl(base64Data, contentType = "audio/mp3") {
+    // Decode base64 string
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length);
+    
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    
+    // Create a Uint8Array from the byte numbers
+    const byteArray = new Uint8Array(byteNumbers);
+    
+    // Create a Blob from the Uint8Array
+    const blob = new Blob([byteArray], { type: contentType });
+    
+    // Generate and return a Blob URL
+    return URL.createObjectURL(blob);
+  }
+
   const stopRecording = () => {
     if (mediaRecorder) {
       mediaRecorder.stop();
       setMediaRecorder(null);
     }
+    VoiceRecorder.stopRecording()
+    .then((result) => {
+      console.log(result);
+      // const audioRef = new Audio(`data:${result.value.mimeType};base64,${result.value.recordDataBase64}`)
+      
+      let uri =base64ToBlobUrl(result.value.recordDataBase64)
+      console.log(uri);
+      setAudioUri(uri);
+      saveSloka(uri);
+      
+      setRecordingStatus('NONE');
+    })
+    .catch((error) => console.log(error));
   };
 
   const saveSloka = async (audioUri) => {
@@ -139,7 +189,7 @@ const AddSloka = () => {
         <IonInput
           placeholder="Sloka Verse"
           value={title}
-          // onIonInput={(e) => setTitle(e.detail.value || "")}
+          onIonInput={(e) => setTitle(e.detail.value || "")}
           clearInput
           style={{
             marginBottom: "12px",
@@ -153,7 +203,7 @@ const AddSloka = () => {
         <IonTextarea
           placeholder="Sloka"
           value={slokaText}
-          // onIonInput={(e) => setSlokaText(e.detail.value || "")}
+          onIonInput={(e) => setSlokaText(e.detail.value || "")}
           autoGrow
           style={{
             marginBottom: "12px",
@@ -167,10 +217,10 @@ const AddSloka = () => {
         <IonButton
           expand="block"
           color={mediaRecorder ? "danger" : "primary"}
-          onClick={mediaRecorder ? stopRecording : startRecording}
+          onClick={mediaRecorder || recordingStatus=='RECORDING' ? stopRecording : startRecording}
           style={{ marginBottom: "8px" }}
         >
-          {mediaRecorder ? "Stop" : "🎤 Record"}
+          {mediaRecorder || recordingStatus=='RECORDING' ? "Stop" : "🎤 Record"}
         </IonButton>
         <UploadAudio
           validateFields={validateFields}
