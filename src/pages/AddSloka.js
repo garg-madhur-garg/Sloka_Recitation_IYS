@@ -37,6 +37,17 @@ const AddSloka = () => {
   //   return true;
   // };
 
+  async function requestMicPermission() {
+    const permission = await VoiceRecorder.requestAudioRecordingPermission();
+  
+    if (permission.value === true) {
+      // Permission granted — start recording
+      await VoiceRecorder.startRecording();
+    } else {
+      console.log('Microphone permission not granted');
+    }
+  }
+
   const validateFields = () => {
     const trimmedTitle = title.trim();
     const trimmedText = slokaText.trim();
@@ -49,6 +60,7 @@ const AddSloka = () => {
 
   // Start recording: use native Media Capture on hybrid and MediaRecorder on web
   const startRecording = async () => {
+    requestMicPermission()
     // if (document.activeElement instanceof HTMLElement) {
     //   document.activeElement.blur();
     // }
@@ -216,7 +228,7 @@ const AddSloka = () => {
         />
         <IonButton
           expand="block"
-          color={mediaRecorder ? "danger" : "primary"}
+          color={mediaRecorder || recordingStatus=='RECORDING'? "danger" : "primary"}
           onClick={mediaRecorder || recordingStatus=='RECORDING' ? stopRecording : startRecording}
           style={{ marginBottom: "8px" }}
         >

@@ -17,9 +17,18 @@ import Privacy from './Extra/Privacy'
 import Terms from './Extra/Terms'
 import Rate from './Extra/Rate'
 import Share from './Extra/Share'
+import Feedback from './Extra/Feedback'
 import './TabBar.css'
 
 function TabBar() {
+
+  const closeMenu = () => {
+    const menu = window.document.querySelector('ion-menu');
+    if (menu) {
+      menu.close();
+    }
+  };
+
   return (
     <IonApp>
 
@@ -43,25 +52,26 @@ function TabBar() {
           <Route path="/home/donate" render={() => <Donate />} exact={true} />
           <Route path="/home/privacy" render={() => <Privacy />} exact={true} />
           <Route path="/home/terms" render={() => <Terms />} exact={true} />
-          <Route path="/home/feedback" render={() => <feedback />} exact={true} />
+          <Route path="/home/feedback" render={() => <Feedback />} exact={true} />
+          <Route path="/home/term_policy" render={() => <Terms />} exact={true} />
         </IonRouterOutlet>
         <IonTabBar className='ion-tab-bar' slot="bottom" color="primary" style={{}}>
-          <IonTabButton tab="home" href="/home">
+          <IonTabButton tab="home" href="/home" onClick={closeMenu}>
             <IonIcon icon={home} />
             <IonLabel>Home</IonLabel>
           </IonTabButton>
 
-          <IonTabButton tab="addSloka" href="/addSloka">
+          <IonTabButton tab="addSloka" href="/addSloka" onClick={closeMenu}>
             <IonIcon icon={addCircle} />
             <IonLabel>Add Sloka</IonLabel>
           </IonTabButton>
 
-          <IonTabButton tab="selectSloka" href="/selectSloka">
+          <IonTabButton tab="selectSloka" href="/selectSloka" onClick={closeMenu}>
             <IonIcon icon={barChart} />
             <IonLabel>Play the Sloka</IonLabel>
           </IonTabButton>
 
-          <IonTabButton tab="playlist" href="/playlist">
+          <IonTabButton tab="playlist" href="/playlist" onClick={closeMenu}>
             <IonIcon icon={list} />
             <IonLabel>Playlist</IonLabel>
           </IonTabButton>

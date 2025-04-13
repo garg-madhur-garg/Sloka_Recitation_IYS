@@ -12,11 +12,12 @@ import {
   IonModal,
   IonInput,
   IonItemDivider,
+  IonText,
   IonIcon,
   useIonViewDidEnter,
 } from "@ionic/react";
 import { Storage } from "@capacitor/storage";
-import { add, trash, arrowUp, arrowDown, play, stop } from "ionicons/icons";
+import { add, trash, arrowUp, arrowDown, play, stop, stopOutline, playBackCircle, trashOutline, playOutline } from "ionicons/icons";
 import { useHistory } from "react-router-dom";
 
 const Playlist = () => {
@@ -160,27 +161,34 @@ const Playlist = () => {
             <IonItem key={pl.id} button onClick={() => openPlaylist(pl)}>
               <IonLabel style={{ color: "Black" }}>{pl.name}</IonLabel>
               <IonButton
-                color="primary"
+                // color="primary"
+                color={playingPlaylistId === pl.id ? "danger" : "primary"}
                 fill="solid"
+                size="small"
                 onClick={(e) => {
                   e.stopPropagation();
                   playPlaylistFromList(pl);
                 }}
               >
-                <IonIcon
+                 <IonText>{playingPlaylistId === pl.id ? "⏹" : "▶"}</IonText>
+                {/* <IonIcon
                   slot="icon-only"
-                  icon={playingPlaylistId === pl.id ? stop : play}
-                />
+                  color={playingPlaylistId === pl.id ? "danger" : "primary"}
+                  size="large"
+                  // icon={playingPlaylistId === pl.id ? stopOutline : playOutline}
+                /> */}
               </IonButton>
               <IonButton
                 color="danger"
                 slot="end"
+                size="small"
                 onClick={(e) => {
                   e.stopPropagation();
                   deletePlaylist(pl.id);
                 }}
               >
-                <IonIcon slot="icon-only" icon={trash} />
+                {/* <IonIcon slot="icon-only" icon={trashOutline} size="large" aria-hidden="true"/> */}
+                <IonText>🗑</IonText>
               </IonButton>
             </IonItem>
           ))}
