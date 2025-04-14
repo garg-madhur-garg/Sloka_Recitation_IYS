@@ -1,15 +1,19 @@
 import React from "react";
 import {
-  IonCard,
   IonPage,
   IonHeader,
   IonToolbar,
   IonBackButton,
   IonTitle,
   IonButtons,
-  IonCardContent,
   IonContent,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardContent,
+  IonIcon,
 } from "@ionic/react";
+import { lockClosedOutline, shieldCheckmarkOutline } from "ionicons/icons";
 
 function Privacy() {
   return (
@@ -19,34 +23,34 @@ function Privacy() {
           <IonButtons slot="start">
             <IonBackButton defaultHref="/home" />
           </IonButtons>
-          <IonTitle className="header-title">Privacy Policy</IonTitle>
+          <IonTitle>Privacy Policy</IonTitle>
         </IonToolbar>
       </IonHeader>
 
-      <IonContent fullscreen>
-        <div
-          style={{
-            height: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "16px",
-          }}
-        >
-          <IonCard
-            className="ion-padding"
-            style={{ borderRadius: "8px", width: "100%", maxWidth: "500px" }}
-          >
-            <IonCardContent>
-              This application does not collect any user data. Additionally,
-              there is no database or backend connected to this application.
-              All user data, such as audio, is stored locally on the device. It
-              is important to note that the application does not have the
-              capability to access or alter personal data of the users stored
-              in Mobile Device.
-            </IonCardContent>
-          </IonCard>
-        </div>
+      <IonContent className="ion-padding">
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>
+              <IonIcon icon={lockClosedOutline} style={{ marginRight: "8px" }} />
+              Your Privacy Matters
+            </IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            We respect your privacy. This application does not collect any user data. All your recordings and personal data remain solely on your device.
+          </IonCardContent>
+        </IonCard>
+
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>
+              <IonIcon icon={shieldCheckmarkOutline} style={{ marginRight: "8px" }} />
+              Data Security
+            </IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            There is no backend or external database connected to this application. All user data, including audio files, is stored locally on your device. The application does not have the capability to access or alter any personal data stored on your mobile device.
+          </IonCardContent>
+        </IonCard>
       </IonContent>
     </IonPage>
   );

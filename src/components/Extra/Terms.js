@@ -35,10 +35,22 @@ function Terms() {
         >
           <IonCard
             className="ion-padding"
-            style={{ borderRadius: "8px", width: "100%", maxWidth: "500px" }}
+            style={{
+              borderRadius: "16px",
+              width: "100%",
+              maxWidth: "600px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+              background: "#f9f9f9",
+            }}
           >
-            <IonCardContent>
-            Our app doesn't collect your info. It doesn't use any databases or connect to other servers. Your audio stays on your device.
+            <IonCardContent style={{ fontSize: "16px", lineHeight: "1.6" }}>
+              This app is built with simplicity and your privacy in mind.
+              <br />
+              <br />
+              We do not collect your personal information. No servers, no cloud, no third-party trackers. Everything you do—like recording your recitations—stays securely on your own device.
+              <br />
+              <br />
+              By using the app, you agree to these simple terms: your data is yours, and we won’t touch it.
             </IonCardContent>
           </IonCard>
         </div>
