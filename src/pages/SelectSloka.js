@@ -124,58 +124,6 @@ const SelectSloka = () => {
     };
   };
 
-  // return (
-  //   <IonPage>
-  //     <IonHeader>
-  //       <IonToolbar color="primary">
-  //         <IonTitle className="header-title">Select Slokas</IonTitle>
-  //       </IonToolbar>
-  //     </IonHeader>
-      
-  //     <IonContent className="ion-padding dark-bg" style={{ background: "#121212" }}>
-  //       {slokas.length === 0 ? (
-  //         <IonText color="medium" style={{ textAlign: "center", display: "block", marginTop: "20px" }}>
-  //           No slokas available. Please add slokas from Home Page.
-  //         </IonText>
-  //       ) : (
-  //         <>
-  //           <IonList>
-  //             {slokas.map(sloka => (
-  //               <IonItem key={sloka.id} lines="full">
-  //                 <IonCheckbox 
-  //                   slot="start" 
-  //                   checked={selectedSlokas.includes(sloka.id)}
-  //                   onIonChange={() => toggleSelect(sloka.id)}
-  //                 />
-  //                 <IonLabel style={{ color: "Black" }}>{sloka.title}</IonLabel>
-  //               </IonItem>
-  //             ))}
-  //           </IonList>
-
-  //           <IonGrid>
-  //             <IonRow>
-  //               <IonCol>
-  //                 <IonButton expand="block" onClick={createPlaylist}>
-  //                   Create a Playlist
-  //                 </IonButton>
-  //               </IonCol>
-  //               <IonCol>
-  //                 <IonButton 
-  //                   expand="block" 
-  //                   color={isPlaying ? 'danger' : 'primary'} 
-  //                   onClick={togglePlayback}
-  //                 >
-  //                   {isPlaying ? 'Stop' : 'Play Selected Slokas'}
-  //                 </IonButton>
-  //               </IonCol>
-  //             </IonRow>
-  //           </IonGrid>
-  //         </>
-  //       )}
-  //     </IonContent>
-  //   </IonPage>
-  // );
-
   return (
     <IonPage>
       <IonHeader>

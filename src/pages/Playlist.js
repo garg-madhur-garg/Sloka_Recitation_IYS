@@ -11,13 +11,12 @@ import {
   IonButton,
   IonModal,
   IonInput,
-  IonItemDivider,
   IonText,
   IonIcon,
   useIonViewDidEnter,
 } from "@ionic/react";
 import { Storage } from "@capacitor/storage";
-import { add, trash, arrowUp, arrowDown, play, stop, stopOutline, playBackCircle, trashOutline, playOutline } from "ionicons/icons";
+import { trash, arrowUp, arrowDown} from "ionicons/icons";
 import { useHistory } from "react-router-dom";
 
 const Playlist = () => {
@@ -76,19 +75,6 @@ const Playlist = () => {
 
     updatePlaylistsStorage(updated);
     setSelectedPlaylist(updatedPlaylist);
-
-    // Use a simpler map to update the playlist
-    // const updated = playlists.map((pl) =>
-    //   pl.id === updatedPlaylist.id ? updatedPlaylist : pl
-    // );
-    // // Update state immediately
-    // setPlaylists(updated);
-    // // Save changes to Capacitor Storage
-    // Storage.set({ key: "playlists", value: JSON.stringify(updated) });
-    // // Optionally refresh state after saving (using a helper function)
-    // refreshPlaylists();
-    // // Update selected playlist in case it's used elsewhere
-    // setSelectedPlaylist(updatedPlaylist);
   };
 
   // Helper function to refresh playlists from Storage

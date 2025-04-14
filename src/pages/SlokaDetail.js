@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from "react";
 import {
   IonPage,
@@ -10,7 +8,6 @@ import {
   IonInput,
   IonTextarea,
   IonButton,
-  IonText,
   IonBackButton,
   IonButtons,
   IonItemDivider,
@@ -140,27 +137,6 @@ const SlokaDetail = () => {
       }
     }
   };
-
-  // Stop recording audio
-  // const stopRecording = () => {
-  //   if (mediaRecorder) {
-  //     mediaRecorder.stop();
-  //     setMediaRecorder(null);
-  //   }
-  //   // For native (hybrid) recording
-  //   VoiceRecorder.stopRecording()
-  //     .then((result) => {
-  //       console.log(result);
-  //       // Convert the base64 voice data to a Blob URL
-  //       let uri = base64ToBlobUrl(result.value.recordDataBase64);
-  //       console.log(uri);
-  //       setAudioUri(uri);
-  //       // IMPORTANT: We no longer call saveSloka here.
-  //       // Instead, we wait for the user to click the Save button to update the existing sloka.
-  //       setRecording("NONE");
-  //     })
-  //     .catch((error) => console.log(error));
-  // };
 
   const stopRecording = async () => {
     if (isPlatform("hybrid")) {

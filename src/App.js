@@ -1,6 +1,6 @@
 import './App.css';
 import '@ionic/react/css/core.css';
-import { IonFooter, setupIonicReact } from '@ionic/react';
+import { setupIonicReact } from '@ionic/react';
 import TabBar from './components/TabBar';
 
 import { IonReactRouter } from "@ionic/react-router";

@@ -25,18 +25,7 @@ const AddSloka = () => {
   const [alertVisible, setAlertVisible] = useState(false);
   const [recordingStatus, setRecordingStatus] = useState("NONE")
 
-  // const validateFields = () => {
-  //   const trimmedTitle = title.trim();
-  // const trimmedSlokaText = slokaText.trim();
-  //   console.log("Title:", title);
-  //   console.log("Sloka Text:", slokaText);
-  //   if (!title || !slokaText) {
-  //     setAlertVisible(true);
-  //     return false;
-  //   }
-  //   return true;
-  // };
-
+  
   async function requestMicPermission() {
     const permission = await VoiceRecorder.requestAudioRecordingPermission();
   
