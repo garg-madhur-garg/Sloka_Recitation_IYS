@@ -1,11 +1,11 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.hiddenVault.SlokaRecitation",
+  appId: "com.madhur1600.SlokaRecitation",
   appName: "Sloka Recitation",
   webDir: "build",
   // server: {
-  //   url: "http://192.168.222.246:3000",
+  //   url: "http://192.168.210.246",
   //   cleartext: true,
   // },
   plugins: {
