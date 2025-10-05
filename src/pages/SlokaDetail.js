@@ -17,6 +17,7 @@ import CustomAlert from "../components/CustomAlert";
 import { VoiceRecorder } from "capacitor-voice-recorder";
 import dataManager from "../services/DataManager";
 import notificationService from "../services/NotificationService";
+import UploadAudio from "../components/UploadAudio";
 
 // Helper: Convert base64 string to Blob URL
 function base64ToBlobUrl(base64Data, contentType = "audio/mp3") {
@@ -89,6 +90,13 @@ const SlokaDetail = () => {
       return false;
     }
     return true;
+  };
+
+  // Handle audio file upload
+  const handleAudioUpload = (audioUri) => {
+    console.log("Audio uploaded:", audioUri);
+    setAudioUri(audioUri);
+    notificationService.showSuccess('Audio file uploaded successfully!');
   };
 
   // Start recording audio using native VoiceRecorder
@@ -255,6 +263,15 @@ const SlokaDetail = () => {
           >
             {recording === "RECORDING" ? "⏹ Stop Recording" : "🎤 Record Audio"}
           </IonButton>
+
+          {/* Upload Audio button */}
+          <UploadAudio
+            validateFields={validateFields}
+            setAudioUri={handleAudioUpload}
+            saveSloka={null} // Don't auto-save, just set the audio URI
+            setTitle={null} // Not needed for edit mode
+            setSlokaText={null} // Not needed for edit mode
+          />
 
           {/* Save button to update the current sloka */}
           <IonButton expand="block" color="secondary" onClick={saveChanges}>

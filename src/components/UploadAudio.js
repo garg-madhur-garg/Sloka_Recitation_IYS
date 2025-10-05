@@ -17,17 +17,39 @@ const UploadAudio = (props) => {
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
     if (file) {
+      console.log("File selected:", file.name, file.type, file.size);
+      
+      // Validate file type
+      if (!file.type.startsWith('audio/')) {
+        alert('Please select an audio file.');
+        return;
+      }
+      
+      // Validate file size (limit to 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        alert('File size too large. Please select a file smaller than 10MB.');
+        return;
+      }
+      
       const fileToUpload = {
         name: file.name,
         size: file.size,
         uri: URL.createObjectURL(file),
         type: file.type,
       };
-      if (props.setAudioUri) props.setAudioUri(fileToUpload.uri);
+      
+      console.log("Created file object:", fileToUpload);
+      
+      if (props.setAudioUri) {
+        props.setAudioUri(fileToUpload.uri);
+      }
+      
+      // Only auto-save if saveSloka function is provided (for AddSloka page)
       if (props.saveSloka) {
         props.saveSloka(fileToUpload.uri);
-        props.setTitle("");
-        props.setSlokaText("");
+        if (props.setTitle) props.setTitle("");
+        if (props.setSlokaText) props.setSlokaText("");
       }
     }
   };
