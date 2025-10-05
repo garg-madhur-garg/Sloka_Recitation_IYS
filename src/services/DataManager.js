@@ -20,20 +20,24 @@ class DataManager {
   async getSlokas() {
     try {
       const { value } = await Preferences.get({ key: 'slokas' });
-      return value ? JSON.parse(value) : [];
+      const slokas = value ? JSON.parse(value) : [];
+      console.log("DataManager: Retrieved slokas:", slokas);
+      return slokas;
     } catch (error) {
-      console.error('Error loading slokas:', error);
+      console.error('DataManager: Error loading slokas:', error);
       return [];
     }
   }
 
   async saveSlokas(slokas) {
     try {
+      console.log("DataManager: Saving slokas:", slokas);
       await Preferences.set({ key: 'slokas', value: JSON.stringify(slokas) });
+      console.log("DataManager: Successfully saved to Preferences");
       this.notifyListeners();
       return true;
     } catch (error) {
-      console.error('Error saving slokas:', error);
+      console.error('DataManager: Error saving slokas:', error);
       return false;
     }
   }
@@ -45,12 +49,21 @@ class DataManager {
   }
 
   async updateSloka(updatedSloka) {
+    console.log("DataManager: updateSloka called with:", updatedSloka);
     const slokas = await this.getSlokas();
+    console.log("DataManager: Current slokas:", slokas);
+    
     const index = slokas.findIndex(s => s.id === updatedSloka.id);
+    console.log("DataManager: Found index:", index);
+    
     if (index !== -1) {
       slokas[index] = updatedSloka;
-      return await this.saveSlokas(slokas);
+      console.log("DataManager: Updated slokas array:", slokas);
+      const result = await this.saveSlokas(slokas);
+      console.log("DataManager: Save result:", result);
+      return result;
     }
+    console.log("DataManager: Sloka not found, returning false");
     return false;
   }
 

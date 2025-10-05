@@ -31,7 +31,9 @@ const HomePage = ({ history }) => {
   // Load slokas when view is entered
   useIonViewDidEnter(() => {
     const loadSlokas = async () => {
+      console.log("HomePage: Loading slokas...");
       const slokas = await dataManager.getSlokas();
+      console.log("HomePage: Loaded slokas:", slokas);
       setSlokas(slokas);
       setFilteredSlokas(slokas);
     };

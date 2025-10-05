@@ -157,20 +157,33 @@ const SlokaDetail = () => {
 
   // Save changes to the current sloka (update the existing record)
   const saveChanges = async () => {
+    console.log("saveChanges called");
+    console.log("initialSloka:", initialSloka);
+    console.log("editedTitle:", editedTitle);
+    console.log("editedText:", editedText);
+    console.log("audioUri:", audioUri);
+    
+    if (!initialSloka || !initialSloka.id) {
+      console.error("No initial sloka or ID found");
+      notificationService.showError('Error: No sloka data found to update.');
+      return;
+    }
+
     const updatedSloka = {
       ...initialSloka,
-      title: editedTitle,
-      text: editedText,
+      title: editedTitle.trim(),
+      text: editedText.trim(),
       audioUri: audioUri,
     };
 
+    console.log("updatedSloka:", updatedSloka);
+
     const success = await dataManager.updateSloka(updatedSloka);
+    console.log("Update success:", success);
+    
     if (success) {
       notificationService.showSuccess('Sloka updated successfully!');
-      // Reset fields and navigate back
-      setEditedTitle("");
-      setEditedText("");
-      setAudioUri("");
+      // Navigate back - HomePage will refresh automatically
       history.goBack();
     } else {
       notificationService.showError('Failed to update sloka. Please try again.');
@@ -201,7 +214,10 @@ const SlokaDetail = () => {
           <IonInput
             value={editedTitle}
             placeholder="Sloka Title"
-            onIonChange={(e) => setEditedTitle(e.detail.value)}
+            onIonInput={(e) => {
+              console.log("Title input changed:", e.detail.value);
+              setEditedTitle(e.detail.value || "");
+            }}
             clearInput
             className="ion-margin-bottom"
           />
@@ -210,7 +226,10 @@ const SlokaDetail = () => {
           <IonTextarea
             value={editedText}
             placeholder="Sloka Text"
-            onIonChange={(e) => setEditedText(e.detail.value)}
+            onIonInput={(e) => {
+              console.log("Text input changed:", e.detail.value);
+              setEditedText(e.detail.value || "");
+            }}
             autoGrow
             className="ion-margin-bottom"
             style={{ height: "200px" }}
