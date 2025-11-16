@@ -1,0 +1,56 @@
+/* MenuBar.css */
+
+/* Set the background image for the menu */
+/* .custom-menu {
+    --background: url('/assets/radha_gopinath.jpg') no-repeat center center;
+    --background-size: cover;
+  } */
+  
+  /* Style the menu items container */
+
+  
+  .menu-items-container {
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    margin-top: 20px;
+  }
+  
+  /* Style each menu item */
+  .menu-item {
+    width: 90%;
+    max-width: 300px;
+    margin: 10px 10px;
+    padding: 7px;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .menu-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+  }
+  
+  .menu-item ion-icon {
+    margin-right: 15px;
+    font-size: 20px;
+  }
+  
+  .menu-item ion-text {
+    font-size: 16px;
+    font-weight: 500;
+  }
+  
+  /* Style the background image */
+  .menu-background-image {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+  }
+  
