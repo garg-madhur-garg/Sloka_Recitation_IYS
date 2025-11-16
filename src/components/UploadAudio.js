@@ -42,12 +42,13 @@ const UploadAudio = (props) => {
       console.log("Created file object:", fileToUpload);
       
       if (props.setAudioUri) {
-        props.setAudioUri(fileToUpload.uri);
+        props.setAudioUri(fileToUpload.uri, file.name);
       }
       
       // Only auto-save if saveSloka function is provided (for AddSloka page)
       if (props.saveSloka) {
-        props.saveSloka(fileToUpload.uri);
+        // Pass both URI and original filename
+        props.saveSloka(fileToUpload.uri, file.name);
         if (props.setTitle) props.setTitle("");
         if (props.setSlokaText) props.setSlokaText("");
       }

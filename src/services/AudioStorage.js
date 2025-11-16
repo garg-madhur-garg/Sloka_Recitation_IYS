@@ -19,7 +19,8 @@ class AudioStorage {
   }
 
   // Save audio file from Blob URL or base64 to filesystem
-  async saveAudio(audioUri, slokaId) {
+  // fileName: optional - if provided, use it (for uploaded files). If not, use default naming (for recorded files)
+  async saveAudio(audioUri, slokaId, fileName = null) {
     try {
       await this.ensureBaseDir();
       
@@ -44,8 +45,21 @@ class AudioStorage {
         return audioUri;
       }
 
-      const fileName = `audio_${slokaId}.m4a`;
-      const filePath = `${this.baseDir}/${fileName}`;
+      // Use provided fileName (for uploads) or default naming (for recordings)
+      let finalFileName;
+      if (fileName) {
+        // Sanitize filename - remove path separators and keep only safe characters
+        finalFileName = fileName.replace(/[/\\?%*:|"<>]/g, '_');
+        // Ensure it has an extension
+        if (!finalFileName.match(/\.[a-zA-Z0-9]+$/)) {
+          finalFileName += '.m4a';
+        }
+      } else {
+        // Default naming for recorded files
+        finalFileName = `audio_${slokaId}.m4a`;
+      }
+      
+      const filePath = `${this.baseDir}/${finalFileName}`;
 
       // Write file to filesystem
       await Filesystem.writeFile({

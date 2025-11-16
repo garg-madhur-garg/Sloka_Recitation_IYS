@@ -117,16 +117,16 @@ const AddSloka = () => {
     }
   };
 
-  const saveSloka = async (audioUri, slokaId, base64Data) => {
+  const saveSloka = async (audioUri, slokaId, base64Data, fileName = null) => {
     try {
       // Save audio to filesystem
       let savedPath;
       if (base64Data) {
-        // Direct base64 from recording
+        // Direct base64 from recording - use default naming
         savedPath = await audioStorage.saveAudio(base64Data, slokaId);
       } else {
-        // Blob URL from upload
-        savedPath = await audioStorage.saveAudio(audioUri, slokaId);
+        // Blob URL from upload - use original filename if provided
+        savedPath = await audioStorage.saveAudio(audioUri, slokaId, fileName);
       }
       
       const newSloka = {
@@ -201,9 +201,9 @@ const AddSloka = () => {
         <UploadAudio
           validateFields={validateFields}
           setAudioUri={setAudioUri}
-          saveSloka={(uri) => {
+          saveSloka={(uri, fileName) => {
             const slokaId = Date.now().toString();
-            saveSloka(uri, slokaId);
+            saveSloka(uri, slokaId, null, fileName);
           }}
           setTitle={setTitle}
           setSlokaText={setSlokaText}

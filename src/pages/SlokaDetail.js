@@ -46,6 +46,7 @@ const SlokaDetail = () => {
   const [recording, setRecording] = useState("NONE"); // "NONE" or "RECORDING"
   const [audioUri, setAudioUri] = useState(initialSloka ? initialSloka.audioUri : "");
   const [audioBlobUrl, setAudioBlobUrl] = useState(""); // For playback
+  const [uploadedFileName, setUploadedFileName] = useState(null); // Store uploaded file name
   const [alertVisible, setAlertVisible] = useState(false);
   const [sound, setSound] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -130,10 +131,11 @@ const SlokaDetail = () => {
   };
 
   // Handle audio file upload
-  const handleAudioUpload = async (audioUri) => {
-    console.log("Audio uploaded:", audioUri);
+  const handleAudioUpload = async (audioUri, fileName) => {
+    console.log("Audio uploaded:", audioUri, "Filename:", fileName);
     // Store the Blob URL temporarily, will be saved to filesystem on save
     setAudioUri(audioUri);
+    setUploadedFileName(fileName); // Store filename for later use when saving
     if (audioUri.startsWith('blob:')) {
       setAudioBlobUrl(audioUri);
     }
@@ -217,11 +219,11 @@ const SlokaDetail = () => {
       // If audioUri is a Blob URL, save it to filesystem first
       let finalAudioUri = audioUri;
       if (audioUri && audioUri.startsWith('blob:')) {
-        // Save to filesystem
-        finalAudioUri = await audioStorage.saveAudio(audioUri, initialSloka.id);
+        // Save to filesystem - use uploaded filename if available, otherwise use default
+        finalAudioUri = await audioStorage.saveAudio(audioUri, initialSloka.id, uploadedFileName);
       } else if (!audioStorage.isFileSystemPath(audioUri) && audioUri) {
         // Try to save if it's not already a filesystem path
-        finalAudioUri = await audioStorage.saveAudio(audioUri, initialSloka.id);
+        finalAudioUri = await audioStorage.saveAudio(audioUri, initialSloka.id, uploadedFileName);
       }
 
       const updatedSloka = {
