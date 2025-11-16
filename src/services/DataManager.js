@@ -1,4 +1,5 @@
 import { Preferences } from '@capacitor/preferences';
+import audioStorage from './AudioStorage';
 
 class DataManager {
   constructor() {
@@ -22,6 +23,9 @@ class DataManager {
       const { value } = await Preferences.get({ key: 'slokas' });
       const slokas = value ? JSON.parse(value) : [];
       console.log("DataManager: Retrieved slokas:", slokas);
+      
+      // Restore audio files from filesystem (convert filesystem paths to Blob URLs for playback)
+      // Note: We keep the filesystem path in the data, but components will load the Blob URL when needed
       return slokas;
     } catch (error) {
       console.error('DataManager: Error loading slokas:', error);
@@ -69,6 +73,18 @@ class DataManager {
 
   async deleteSloka(slokaId) {
     const slokas = await this.getSlokas();
+    const slokaToDelete = slokas.find(s => s.id === slokaId);
+    
+    // Delete audio file from filesystem if it exists
+    if (slokaToDelete && slokaToDelete.audioUri && audioStorage.isFileSystemPath(slokaToDelete.audioUri)) {
+      try {
+        await audioStorage.deleteAudio(slokaToDelete.audioUri);
+      } catch (error) {
+        console.error('Error deleting audio file:', error);
+        // Continue with sloka deletion even if audio deletion fails
+      }
+    }
+    
     const filteredSlokas = slokas.filter(s => s.id !== slokaId);
     return await this.saveSlokas(filteredSlokas);
   }

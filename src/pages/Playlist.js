@@ -21,6 +21,7 @@ import CustomAlert from "../components/CustomAlert";
 import dataManager from "../services/DataManager";
 import notificationService from "../services/NotificationService";
 import audioManager from "../services/AudioManager";
+import audioStorage from "../services/AudioStorage";
 
 const Playlist = () => {
   // Playlists structure: array of { id, name, songs: [ { id, title, audioUri } ] }
@@ -130,17 +131,37 @@ const Playlist = () => {
       }
       setPlayingPlaylistId(playlist.id);
       let index = 0;
-      const playNext = () => {
+      const playNext = async () => {
         if (index >= playlist.songs.length) {
           index = 0; // loop back
         }
-        const audio = new Audio(playlist.songs[index].audioUri);
-        setCurrentAudio(audio);
-        audio.play().catch((err) => console.error(err));
-        audio.onended = () => {
-          index++;
-          playNext();
-        };
+        try {
+          const song = playlist.songs[index];
+          // Load audio from filesystem if needed
+          let playableUri = song.audioUri;
+          if (audioStorage.isFileSystemPath(song.audioUri)) {
+            playableUri = await audioStorage.loadAudio(song.audioUri);
+            if (!playableUri) {
+              console.error("Failed to load audio from filesystem");
+              setPlayingPlaylistId(null);
+              return;
+            }
+          }
+          
+          const audio = new Audio(playableUri);
+          setCurrentAudio(audio);
+          audio.play().catch((err) => {
+            console.error(err);
+            setPlayingPlaylistId(null);
+          });
+          audio.onended = () => {
+            index++;
+            playNext();
+          };
+        } catch (error) {
+          console.error("Error playing song:", error);
+          setPlayingPlaylistId(null);
+        }
       };
       playNext();
     }

@@ -22,6 +22,7 @@ import CustomAlert from '../components/CustomAlert';
 import dataManager from '../services/DataManager';
 import notificationService from '../services/NotificationService';
 import audioManager from '../services/AudioManager';
+import audioStorage from '../services/AudioStorage';
 
 const SelectSloka = () => {
   const [slokas, setSlokas] = useState([]);
@@ -132,21 +133,40 @@ const SelectSloka = () => {
   };
 
   // Function to Play Sloka
-  const playCurrentSloka = (selectedList, index) => {
+  const playCurrentSloka = async (selectedList, index) => {
     const currentSloka = selectedList[index];
     if (!currentSloka) return;
 
-    const audio = new Audio(currentSloka.audioUri);
-    audio.loop = false;
-    setCurrentAudio(audio);
+    try {
+      // Load audio from filesystem if needed
+      let playableUri = currentSloka.audioUri;
+      if (audioStorage.isFileSystemPath(currentSloka.audioUri)) {
+        playableUri = await audioStorage.loadAudio(currentSloka.audioUri);
+        if (!playableUri) {
+          console.error("Failed to load audio from filesystem");
+          setIsPlaying(false);
+          return;
+        }
+      }
 
-    audio.play().catch(err => console.error("Playback error:", err));
-    audio.onended = () => {
-      let nextIndex = index + 1;
-      if (nextIndex >= selectedList.length) nextIndex = 0;
-      setCurrentPlaylistIndex(nextIndex);
-      playCurrentSloka(selectedList, nextIndex);
-    };
+      const audio = new Audio(playableUri);
+      audio.loop = false;
+      setCurrentAudio(audio);
+
+      audio.play().catch(err => {
+        console.error("Playback error:", err);
+        setIsPlaying(false);
+      });
+      audio.onended = () => {
+        let nextIndex = index + 1;
+        if (nextIndex >= selectedList.length) nextIndex = 0;
+        setCurrentPlaylistIndex(nextIndex);
+        playCurrentSloka(selectedList, nextIndex);
+      };
+    } catch (error) {
+      console.error("Error playing sloka:", error);
+      setIsPlaying(false);
+    }
   };
 
   return (

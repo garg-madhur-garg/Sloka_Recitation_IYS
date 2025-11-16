@@ -15,6 +15,7 @@ import CustomAlert from "../components/CustomAlert";
 import UploadAudio from "../components/UploadAudio";
 import dataManager from "../services/DataManager";
 import notificationService from "../services/NotificationService";
+import audioStorage from "../services/AudioStorage";
 
 const AddSloka = () => {
   const history = useHistory();
@@ -93,41 +94,60 @@ const AddSloka = () => {
     return URL.createObjectURL(blob);
   }
 
-  const stopRecording = () => {
+  const stopRecording = async () => {
     console.log("stopRecording called");
     console.log("Stopping native recording");
     
-    VoiceRecorder.stopRecording()
-      .then((result) => {
-        console.log("Recording stopped:", result);
-        let uri = base64ToBlobUrl(result.value.recordDataBase64);
-        setAudioUri(uri);
-        saveSloka(uri);
-        setRecordingStatus('NONE');
-      })
-      .catch((error) => {
-        console.error("Error stopping recording:", error);
-        alert("Error stopping recording: " + error.message);
-        setRecordingStatus('NONE');
-      });
+    try {
+      const result = await VoiceRecorder.stopRecording();
+      console.log("Recording stopped:", result);
+      
+      // Create temporary Blob URL for immediate playback
+      let tempUri = base64ToBlobUrl(result.value.recordDataBase64);
+      setAudioUri(tempUri);
+      
+      // Save sloka with audio (will save to filesystem)
+      const slokaId = Date.now().toString();
+      await saveSloka(tempUri, slokaId, result.value.recordDataBase64);
+      setRecordingStatus('NONE');
+    } catch (error) {
+      console.error("Error stopping recording:", error);
+      alert("Error stopping recording: " + error.message);
+      setRecordingStatus('NONE');
+    }
   };
 
-  const saveSloka = async (audioUri) => {
-    const newSloka = {
-      id: Date.now().toString(),
-      title,
-      text: slokaText,
-      audioUri,
-    };
-    
-    const success = await dataManager.addSloka(newSloka);
-    if (success) {
-      notificationService.showSuccess('Sloka saved successfully!');
-      setTitle("");
-      setSlokaText("");
-      history.goBack();
-    } else {
-      notificationService.showError('Failed to save sloka. Please try again.');
+  const saveSloka = async (audioUri, slokaId, base64Data) => {
+    try {
+      // Save audio to filesystem
+      let savedPath;
+      if (base64Data) {
+        // Direct base64 from recording
+        savedPath = await audioStorage.saveAudio(base64Data, slokaId);
+      } else {
+        // Blob URL from upload
+        savedPath = await audioStorage.saveAudio(audioUri, slokaId);
+      }
+      
+      const newSloka = {
+        id: slokaId,
+        title,
+        text: slokaText,
+        audioUri: savedPath, // Store filesystem path instead of Blob URL
+      };
+      
+      const success = await dataManager.addSloka(newSloka);
+      if (success) {
+        notificationService.showSuccess('Sloka saved successfully!');
+        setTitle("");
+        setSlokaText("");
+        history.goBack();
+      } else {
+        notificationService.showError('Failed to save sloka. Please try again.');
+      }
+    } catch (error) {
+      console.error("Error saving sloka:", error);
+      notificationService.showError('Failed to save audio file. Please try again.');
     }
   };
 
@@ -181,7 +201,10 @@ const AddSloka = () => {
         <UploadAudio
           validateFields={validateFields}
           setAudioUri={setAudioUri}
-          saveSloka={saveSloka}
+          saveSloka={(uri) => {
+            const slokaId = Date.now().toString();
+            saveSloka(uri, slokaId);
+          }}
           setTitle={setTitle}
           setSlokaText={setSlokaText}
         />

@@ -19,6 +19,7 @@ import dataManager from "../services/DataManager";
 import notificationService from "../services/NotificationService";
 import UploadAudio from "../components/UploadAudio";
 import audioManager from "../services/AudioManager";
+import audioStorage from "../services/AudioStorage";
 
 // Helper: Convert base64 string to Blob URL
 function base64ToBlobUrl(base64Data, contentType = "audio/mp3") {
@@ -44,9 +45,33 @@ const SlokaDetail = () => {
   const [editedText, setEditedText] = useState(initialSloka ? initialSloka.text : "");
   const [recording, setRecording] = useState("NONE"); // "NONE" or "RECORDING"
   const [audioUri, setAudioUri] = useState(initialSloka ? initialSloka.audioUri : "");
+  const [audioBlobUrl, setAudioBlobUrl] = useState(""); // For playback
   const [alertVisible, setAlertVisible] = useState(false);
   const [sound, setSound] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  // Load audio from filesystem when component mounts or audioUri changes
+  useEffect(() => {
+    const loadAudio = async () => {
+      if (audioUri) {
+        if (audioStorage.isFileSystemPath(audioUri)) {
+          // Load from filesystem
+          const blobUrl = await audioStorage.loadAudio(audioUri);
+          setAudioBlobUrl(blobUrl);
+        } else if (audioUri.startsWith('blob:')) {
+          // Already a Blob URL (temporary)
+          setAudioBlobUrl(audioUri);
+        } else {
+          // Try to load as filesystem path
+          const blobUrl = await audioStorage.loadAudio(audioUri);
+          setAudioBlobUrl(blobUrl || audioUri);
+        }
+      } else {
+        setAudioBlobUrl("");
+      }
+    };
+    loadAudio();
+  }, [audioUri]);
 
   // Hide the tab bar on this page.
   useEffect(() => {
@@ -75,8 +100,15 @@ const SlokaDetail = () => {
         // Stop any audio playing from AudioManager (e.g., from HomePage)
         audioManager.stopAudio();
         
+        // Use the loaded Blob URL for playback
+        const audioToPlay = audioBlobUrl || audioUri;
+        if (!audioToPlay) {
+          notificationService.showError('No audio available to play');
+          return;
+        }
+        
         const newSound = new Audio();
-        newSound.src = audioUri;
+        newSound.src = audioToPlay;
         newSound.loop = true;
         setSound(newSound);
         await newSound.play();
@@ -84,6 +116,7 @@ const SlokaDetail = () => {
       }
     } catch (error) {
       console.error("Playback failed", error);
+      notificationService.showError('Failed to play audio');
     }
   };
 
@@ -97,9 +130,13 @@ const SlokaDetail = () => {
   };
 
   // Handle audio file upload
-  const handleAudioUpload = (audioUri) => {
+  const handleAudioUpload = async (audioUri) => {
     console.log("Audio uploaded:", audioUri);
+    // Store the Blob URL temporarily, will be saved to filesystem on save
     setAudioUri(audioUri);
+    if (audioUri.startsWith('blob:')) {
+      setAudioBlobUrl(audioUri);
+    }
     notificationService.showSuccess('Audio file uploaded successfully!');
   };
 
@@ -146,21 +183,16 @@ const SlokaDetail = () => {
     console.log("Stopping native recording in SlokaDetail");
     
     try {
-      await VoiceRecorder.stopRecording()
-        .then((result) => {
-          console.log("Recording stopped in SlokaDetail:", result);
-          // Convert base64 voice data to a Blob URL
-          const uri = base64ToBlobUrl(result.value.recordDataBase64);
-          setAudioUri(uri);
-          setRecording("NONE");
-        })
-        .catch((error) => {
-          console.error("Error stopping recording:", error);
-          alert("Error stopping recording: " + error.message);
-          setRecording("NONE");
-        });
+      const result = await VoiceRecorder.stopRecording();
+      console.log("Recording stopped in SlokaDetail:", result);
+      // Convert base64 voice data to a Blob URL for immediate playback
+      const tempUri = base64ToBlobUrl(result.value.recordDataBase64);
+      setAudioUri(tempUri);
+      setAudioBlobUrl(tempUri);
+      // Store base64 for saving later
+      setRecording("NONE");
     } catch (error) {
-      console.error("Error stopping native recording", error);
+      console.error("Error stopping recording:", error);
       alert("Error stopping recording: " + error.message);
       setRecording("NONE");
     }
@@ -181,24 +213,39 @@ const SlokaDetail = () => {
       return;
     }
 
-    const updatedSloka = {
-      ...initialSloka,
-      title: editedTitle.trim(),
-      text: editedText.trim(),
-      audioUri: audioUri,
-    };
+    try {
+      // If audioUri is a Blob URL, save it to filesystem first
+      let finalAudioUri = audioUri;
+      if (audioUri && audioUri.startsWith('blob:')) {
+        // Save to filesystem
+        finalAudioUri = await audioStorage.saveAudio(audioUri, initialSloka.id);
+      } else if (!audioStorage.isFileSystemPath(audioUri) && audioUri) {
+        // Try to save if it's not already a filesystem path
+        finalAudioUri = await audioStorage.saveAudio(audioUri, initialSloka.id);
+      }
 
-    console.log("updatedSloka:", updatedSloka);
+      const updatedSloka = {
+        ...initialSloka,
+        title: editedTitle.trim(),
+        text: editedText.trim(),
+        audioUri: finalAudioUri,
+      };
 
-    const success = await dataManager.updateSloka(updatedSloka);
-    console.log("Update success:", success);
-    
-    if (success) {
-      notificationService.showSuccess('Sloka updated successfully!');
-      // Navigate back - HomePage will refresh automatically
-      history.goBack();
-    } else {
-      notificationService.showError('Failed to update sloka. Please try again.');
+      console.log("updatedSloka:", updatedSloka);
+
+      const success = await dataManager.updateSloka(updatedSloka);
+      console.log("Update success:", success);
+      
+      if (success) {
+        notificationService.showSuccess('Sloka updated successfully!');
+        // Navigate back - HomePage will refresh automatically
+        history.goBack();
+      } else {
+        notificationService.showError('Failed to update sloka. Please try again.');
+      }
+    } catch (error) {
+      console.error("Error saving sloka:", error);
+      notificationService.showError('Failed to save audio file. Please try again.');
     }
   };
 
@@ -265,7 +312,7 @@ const SlokaDetail = () => {
         </IonItemDivider>
         <div className="ion-margin-vertical" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {/* Play Loop button (if audio is available) */}
-          {audioUri && (
+          {(audioUri || audioBlobUrl) && (
             <IonButton
               expand="block"
               color={isPlaying ? "danger" : "primary"}

@@ -1,3 +1,5 @@
+import audioStorage from './AudioStorage';
+
 class AudioManager {
   constructor() {
     this.currentAudio = null;
@@ -29,8 +31,18 @@ class AudioManager {
         this.stopAudio();
       }
 
+      // Load audio from filesystem if needed
+      let playableUri = audioUri;
+      if (audioStorage.isFileSystemPath(audioUri)) {
+        playableUri = await audioStorage.loadAudio(audioUri);
+        if (!playableUri) {
+          console.error('Failed to load audio from filesystem');
+          return false;
+        }
+      }
+
       // Create new audio instance
-      this.currentAudio = new Audio(audioUri);
+      this.currentAudio = new Audio(playableUri);
       this.currentAudioId = audioId;
       
       // Set up event listeners
