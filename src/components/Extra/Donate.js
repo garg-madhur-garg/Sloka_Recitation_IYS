@@ -1,20 +1,12 @@
 import React from "react";
 import {
-  IonButtons,
-  IonContent,
-  IonHeader,
-  IonMenu,
-  IonMenuButton,
   IonPage,
-  IonSearchbar,
-  IonTitle,
-  IonToolbar,
 } from "@ionic/react";
 function Donate() {
   return (
-    <>
+    <IonPage>
       This is Donate Page
-    </>
+    </IonPage>
   );
 }
 export default Donate;

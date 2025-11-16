@@ -1,82 +1,105 @@
-// import React from "react";
-// import { IonItem, IonLabel, IonMenu, IonPage } from "@ionic/react";
-// import About from "./Extra/About";
-// import Share from "./Extra/Share";
-// import Rate from "./Extra/Rate";
-// import Donate from "./Extra/Donate";
-// import Privacy from "./Extra/Privacy";
-// import Feedback from "./Extra/Feedback";
-
-// function MenuBar() {
-//   return (
-//     <>
-//       <IonMenu contentId="main-content">
-//         <IonItem button>
-//           <About />
-//         </IonItem>
-
-//         <IonItem button>
-//           <Share />
-//         </IonItem>
-
-//         <IonItem button>
-//           <Rate />
-//         </IonItem>
-
-//         <IonItem button>
-//           <Donate />
-//         </IonItem>
-
-//         <IonItem button>
-//           <Privacy />
-//         </IonItem>
-
-//         <IonItem button>
-//           <Feedback />
-//         </IonItem>
-//       </IonMenu>
-//     </>
-//   );
-// }
-// export default MenuBar;
-
 import React from "react";
-import { IonMenu, IonContent, IonList, IonItem, IonImg, IonItemDivider, IonLabel } from "@ionic/react";
-import About from "./Extra/About";
-import Share from "./Extra/Share";
-import Rate from "./Extra/Rate";
-import Donate from "./Extra/Donate";
-import Privacy from "./Extra/Privacy";
-import Feedback from "./Extra/Feedback";
+import {
+  IonMenu,
+  IonContent,
+  IonList,
+  IonItem,
+  IonImg,
+  IonIcon,
+  IonText,
+  IonMenuToggle,
+} from "@ionic/react";
+import {
+  informationCircleOutline,
+  shareSocialOutline,
+  documentTextOutline,
+  serverOutline,
+  mailOutline,
+} from "ionicons/icons";
+import RadhaGopinathImage from "../assets/radha_gopinath.jpg";
+import { useHistory } from "react-router-dom";
+import "./MenuBar.css"; // Import the CSS file for custom styles
 
 function MenuBar() {
+  const history = useHistory();
+
+  const navigateAndClose = (path) => {
+    history.push(path);
+    window.document.querySelector("ion-menu").close();
+  };
+
   return (
-    <IonMenu contentId="main-content">
+    <IonMenu contentId="main-content" className="custom-menu">
       <IonContent className="ion-no-padding">
         <IonList className="ion-no-margin">
           <IonImg
-            src="https://docs-demo.ionic.io/assets/madison.jpg"
-            alt="The Wisconsin State Capitol building in Madison, WI at night"
-          ></IonImg>
-          
-          <IonItem button href="./home/about" lines="none" className="ion-no-margin" style={{borderBottom: "0.5px solid grey"}}>
-            <About />
-          </IonItem>
-          <IonItem button href="./home/share" lines="none" className="ion-no-margin" style={{borderBottom: "0.5px solid grey"}}>
-            <Share />
-          </IonItem>
-          <IonItem button href="./home/rate" lines="none" className="ion-no-margin" style={{borderBottom: "0.5px solid grey"}}>
-            <Rate />
-          </IonItem>
-          <IonItem button href="./home/donate" lines="none" className="ion-no-margin" style={{borderBottom: "0.5px solid grey"}}>
-            <Donate />
-          </IonItem>
-          <IonItem button href="./home/privacy" lines="none" className="ion-no-margin" style={{borderBottom: "0.5px solid grey"}}>
-            <Privacy />
-          </IonItem>
-          <IonItem button href="./home/feedback" lines="none" className="ion-no-margin" style={{borderBottom: "0.5px solid grey"}}>
-            <Feedback />
-          </IonItem>
+            src={RadhaGopinathImage}
+            className="menu-background-image"
+          />
+          <div className="menu-items-container">
+            <IonMenuToggle>
+              <IonItem
+                button
+                lines="none"
+                className="menu-item"
+                onClick={() => navigateAndClose("/home/about")}
+              >
+                <IonIcon icon={informationCircleOutline} slot="start" />
+                <IonText>About</IonText>
+              </IonItem>
+            </IonMenuToggle>
+
+            <IonMenuToggle>
+              <IonItem
+                button
+                lines="none"
+                className="menu-item"
+                onClick={() => navigateAndClose("/home/share")}
+              >
+                <IonIcon icon={shareSocialOutline} slot="start" />
+                <IonText>Share the App</IonText>
+              </IonItem>
+            </IonMenuToggle>
+
+            <IonMenuToggle>
+              <IonItem
+                button
+                lines="none"
+                className="menu-item"
+                onClick={() => navigateAndClose("/home/privacy")}
+              >
+                <IonIcon icon={documentTextOutline} slot="start" />
+                <IonText>Privacy Policy</IonText>
+              </IonItem>
+            </IonMenuToggle>
+
+            <IonMenuToggle>
+              <IonItem
+                button
+                lines="none"
+                className="menu-item"
+                onClick={() => navigateAndClose("/home/terms")}
+              >
+                <IonIcon icon={serverOutline} slot="start" />
+                <IonText>Terms of Service</IonText>
+              </IonItem>
+            </IonMenuToggle>
+
+            <IonMenuToggle>
+              <IonItem
+                button
+                lines="none"
+                className="menu-item"
+                onClick={() =>
+                  (window.location.href =
+                    "mailto:feedback@slokarecitation.com?subject=Feedback&body=Your feedback here")
+                }
+              >
+                <IonIcon icon={mailOutline} slot="start" />
+                <IonText>Feedback / Queries</IonText>
+              </IonItem>
+            </IonMenuToggle>
+          </div>
         </IonList>
       </IonContent>
     </IonMenu>

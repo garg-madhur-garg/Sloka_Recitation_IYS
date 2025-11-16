@@ -11,16 +11,16 @@ import {
   IonButton,
   IonModal,
   IonInput,
-  IonItemDivider,
+  IonText,
   IonIcon,
-  IonGrid,
-  IonRow,
-  IonCol,
   useIonViewDidEnter,
 } from "@ionic/react";
-import { Storage } from "@capacitor/storage";
-import { add, trash, arrowUp, arrowDown, play } from "ionicons/icons";
+import { trash, arrowUp, arrowDown} from "ionicons/icons";
 import { useHistory } from "react-router-dom";
+import CustomAlert from "../components/CustomAlert";
+import dataManager from "../services/DataManager";
+import notificationService from "../services/NotificationService";
+import audioManager from "../services/AudioManager";
 
 const Playlist = () => {
   // Playlists structure: array of { id, name, songs: [ { id, title, audioUri } ] }
@@ -28,39 +28,48 @@ const Playlist = () => {
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // For main page playback state
+  // Playback state
   const [playingPlaylistId, setPlayingPlaylistId] = useState(null);
   const [currentAudio, setCurrentAudio] = useState(null);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
 
   const history = useHistory();
   const modalInputRef = useRef(null);
   const saveModelRef = useRef(null);
 
-  // Load playlists whenever the page becomes active
+  // Load playlists when page becomes active
   useIonViewDidEnter(() => {
     const loadPlaylists = async () => {
-      const { value } = await Storage.get({ key: "playlists" });
-      if (value) {
-        setPlaylists(JSON.parse(value));
-      } else {
-        setPlaylists([]);
-      }
+      const playlists = await dataManager.getPlaylists();
+      setPlaylists(playlists);
     };
     loadPlaylists();
   });
 
-  // Save playlists to storage and update state
-  const updatePlaylistsStorage = async (updated) => {
-    setPlaylists(updated);
-    await Storage.set({ key: "playlists", value: JSON.stringify(updated) });
-  };
+  // Stop local audio when AudioManager starts playing
+  useEffect(() => {
+    const unsubscribe = audioManager.subscribe((state) => {
+      if (state.isPlaying && state.currentAudioId) {
+        // AudioManager is playing, stop local audio
+        if (currentAudio) {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+          setCurrentAudio(null);
+        }
+        setPlayingPlaylistId(null);
+      }
+    });
+    return unsubscribe;
+  }, [currentAudio]);
 
-  // (Optional) Navigate to create a new playlist page (SelectSloka)
+
+  // Navigate to create a new playlist page
   const addPlaylist = () => {
     history.push("/selectSloka");
   };
 
-  // Open modal for a selected playlist
+  // Open modal for editing a playlist
   const openPlaylist = (playlist) => {
     setIsModalOpen(false);
     if (saveModelRef.current) {
@@ -71,18 +80,28 @@ const Playlist = () => {
   };
 
   // Update a specific playlist in storage
-  const updatePlaylist = (updatedPlaylist) => {
-    const updated = playlists.map((pl) =>
-      pl.id === updatedPlaylist.id ? updatedPlaylist : pl
-    );
-    updatePlaylistsStorage(updated);
-    setSelectedPlaylist(updatedPlaylist);
+  const updatePlaylist = async (updatedPlaylist) => {
+    const success = await dataManager.updatePlaylist(updatedPlaylist);
+    if (success) {
+      const updated = playlists.map((pl) =>
+        pl.id === updatedPlaylist.id ? updatedPlaylist : pl
+      );
+      setPlaylists(updated);
+      setSelectedPlaylist(updatedPlaylist);
+    }
   };
 
-  // Delete a playlist (delete button in the main list)
-  const deletePlaylist = (playlistId) => {
-    const updated = playlists.filter((pl) => pl.id !== playlistId);
-    updatePlaylistsStorage(updated);
+
+  // Delete a playlist
+  const deletePlaylist = async (playlistId) => {
+    const success = await dataManager.deletePlaylist(playlistId);
+    if (success) {
+      const updated = playlists.filter((pl) => pl.id !== playlistId);
+      setPlaylists(updated);
+      notificationService.showSuccess('Playlist deleted successfully');
+    } else {
+      notificationService.showError('Failed to delete playlist');
+    }
     setIsModalOpen(false);
   };
 
@@ -97,14 +116,16 @@ const Playlist = () => {
       }
       setPlayingPlaylistId(null);
     } else {
-      // Stop any existing playback
+      // Stop any existing playback (including AudioManager audio)
+      audioManager.stopAudio();
       if (currentAudio) {
         currentAudio.pause();
         currentAudio.currentTime = 0;
         setCurrentAudio(null);
       }
       if (!playlist.songs || playlist.songs.length === 0) {
-        alert("No songs in this playlist.");
+        setAlertMessage("No songs in this playlist.");
+        setAlertVisible(true);
         return;
       }
       setPlayingPlaylistId(playlist.id);
@@ -129,48 +150,96 @@ const Playlist = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar color="primary">
-          <IonTitle>Playlist Manager</IonTitle>
+          <IonTitle style={{ color: "#FFFFFF" }}>Playlist Manager</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
+      <IonContent className="ion-padding" style={{ background: "#121212" }}>
         <IonButton expand="block" onClick={addPlaylist}>
           Add New Playlist
         </IonButton>
         <IonList>
           {playlists.map((pl) => (
             <IonItem key={pl.id} button onClick={() => openPlaylist(pl)}>
-              <IonLabel>{pl.name}</IonLabel>
+              <IonLabel style={{ color: "Black" }}>{pl.name}</IonLabel>
               <IonButton
-                fill="clear"
+                // color="primary"
+                color={playingPlaylistId === pl.id ? "danger" : "primary"}
+                fill="solid"
+                size="small"
                 onClick={(e) => {
                   e.stopPropagation();
                   playPlaylistFromList(pl);
                 }}
               >
-                <IonIcon slot="icon-only" icon={play} />
+                 <IonText>{playingPlaylistId === pl.id ? "⏹" : "▶"}</IonText>
+                {/* <IonIcon
+                  slot="icon-only"
+                  color={playingPlaylistId === pl.id ? "danger" : "primary"}
+                  size="large"
+                  // icon={playingPlaylistId === pl.id ? stopOutline : playOutline}
+                /> */}
               </IonButton>
               <IonButton
                 color="danger"
                 slot="end"
+                size="small"
                 onClick={(e) => {
                   e.stopPropagation();
                   deletePlaylist(pl.id);
                 }}
               >
-                <IonIcon slot="icon-only" icon={trash} />
+                {/* <IonIcon slot="icon-only" icon={trashOutline} size="large" aria-hidden="true"/> */}
+                <IonText>🗑</IonText>
               </IonButton>
             </IonItem>
           ))}
         </IonList>
 
         {/* Modal for editing a playlist */}
-        <IonModal
+        {/* <IonModal
           isOpen={isModalOpen}
           onDidDismiss={() => {
             setIsModalOpen(false);
-            // Remove focus from the currently focused element
             if (document.activeElement instanceof HTMLElement) {
               document.activeElement.blur();
+            }
+          }}
+        > */}
+
+        <IonModal
+          isOpen={isModalOpen}
+          onWillDismiss={async () => {
+            // Optionally call refresh before the modal fully closes
+            // await refreshPlaylists();
+          }}
+          onDidDismiss={async () => {
+            setIsModalOpen(false);
+            // Force refresh from Storage after modal dismissal
+            // await refreshPlaylists();
+          }}
+        >
+          {selectedPlaylist && (
+            <PlaylistDetail
+              playlist={selectedPlaylist}
+              updatePlaylist={updatePlaylist}
+              deletePlaylist={deletePlaylist}  // Pass the delete function here
+              closeModal={() => setIsModalOpen(false)}
+              modalInputRef={modalInputRef}
+              saveModelRef={saveModelRef}
+            />
+          )}
+        </IonModal>
+
+        {/* <IonModal
+          isOpen={isModalOpen}
+          onDidDismiss={async () => {
+            setIsModalOpen(false);
+            if (document.activeElement instanceof HTMLElement) {
+              document.activeElement.blur();
+            }
+            const { value } = await Preferences.get({ key: "playlists" });
+            if (value) {
+              setPlaylists(JSON.parse(value)); // 🔥 Force Refresh from Storage
             }
           }}
         >
@@ -183,7 +252,19 @@ const Playlist = () => {
               saveModelRef={saveModelRef}
             />
           )}
-        </IonModal>
+        </IonModal> */}
+
+        <CustomAlert
+          visible={alertVisible}
+          title="Notification"
+          message={alertMessage}
+          buttons={[
+            {
+              text: "OK",
+              onClick: () => setAlertVisible(false),
+            },
+          ]}
+        />
       </IonContent>
     </IonPage>
   );
@@ -195,39 +276,52 @@ const PlaylistDetail = ({
   closeModal,
   modalInputRef,
   saveModelRef,
+  deletePlaylist
 }) => {
   const [name, setName] = useState(playlist.name);
   const [songs, setSongs] = useState(playlist.songs);
 
-  // Update local state if playlist prop changes
   useEffect(() => {
     setName(playlist.name);
     setSongs(playlist.songs);
   }, [playlist]);
 
   const saveChanges = () => {
-    const updated = { ...playlist, name, songs };
-    updatePlaylist(updated);
-    closeModal();
+    // Force blur to ensure that any pending input is committed to state
+    // if (document.activeElement instanceof HTMLElement) {
+    //   document.activeElement.blur();
+    // }
+    if (songs.length === 0) {
+      // If no songs remain, delete the playlist.
+      deletePlaylist(playlist.id);
+    } else {
+      const updated = { ...playlist, name, songs };
+      updatePlaylist(updated);
+    }
+    
+
+    setTimeout(() => {
+      closeModal(); // This gives React a small breath to re-render before closing
+    }, 10);
   };
 
   // For demonstration: add a dummy song
-  const addSong = () => {
-    const newSong = {
-      id: Date.now().toString(),
-      title: `Song ${songs.length + 1}`,
-      audioUri: "https://example.com/audio.mp3",
-    };
-    setSongs([...songs, newSong]);
-  };
+  // const addSong = () => {
+  //   const newSong = {
+  //     id: Date.now().toString(),
+  //     title: `Song ${songs.length + 1}`,
+  //     audioUri: "https://example.com/audio.mp3",
+  //   };
+  //   setSongs([...songs, newSong]);
+  // };
 
   const deleteSong = (songId) => {
     const updatedSongs = songs.filter((s) => s.id !== songId);
     setSongs(updatedSongs);
   };
 
-  const moveSongUp = (index) => {
-    if (index === 0) return;
+         const moveSongUp = (index) => {
+           if (index === 0) return;
     const newSongs = [...songs];
     [newSongs[index - 1], newSongs[index]] = [
       newSongs[index],
@@ -247,41 +341,41 @@ const PlaylistDetail = ({
   };
 
   return (
-    <IonPage>
+    <>
       <IonHeader>
         <IonToolbar color="primary">
-          <IonTitle>Edit Playlist</IonTitle>
+          <IonTitle style={{ color: "#FFFFFF" }}>Edit Playlist</IonTitle>
           <IonButton slot="end" onClick={closeModal}>
             Close
           </IonButton>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
-        <IonItemDivider>
+      <IonContent className="ion-padding" style={{ background: "#121212" }}>
+        {/* <IonItemDivider>
           <IonLabel>Playlist Name</IonLabel>
-        </IonItemDivider>
+        </IonItemDivider> */}
         <IonItem>
           <IonInput
             value={name}
             placeholder="Playlist Name"
-            onIonChange={(e) => setName(e.detail.value)}
+            onIonInput={(e) => setName(e.detail.value)}
             ref={modalInputRef}
           />
         </IonItem>
-        <IonButton expand="block" onClick={saveChanges} ref={saveModelRef}>
-          Save Changes
+        <IonButton expand="block" onClick={saveChanges} >
+          Save
         </IonButton>
-        <IonItemDivider>
+        {/* <IonItemDivider>
           <IonLabel>Songs</IonLabel>
-        </IonItemDivider>
-        <IonButton expand="block" onClick={addSong}>
+        </IonItemDivider> */}
+        {/* <IonButton expand="block" onClick={addSong}>
           <IonIcon slot="start" icon={add} />
           Add Song
-        </IonButton>
+        </IonButton> */}
         <IonList>
           {songs.map((song, index) => (
             <IonItem key={song.id}>
-              <IonLabel>{song.title}</IonLabel>
+              <IonLabel style={{ color: "Black" }}>{song.title}</IonLabel>
               <IonButton onClick={() => moveSongUp(index)}>
                 <IonIcon slot="icon-only" icon={arrowUp} />
               </IonButton>
@@ -295,10 +389,8 @@ const PlaylistDetail = ({
           ))}
         </IonList>
       </IonContent>
-    </IonPage>
+    </>
   );
 };
 
 export default Playlist;
-
-

@@ -1,71 +1,115 @@
-
-
-import React, { useState } from 'react';
-import { 
-  IonPage, 
-  IonHeader, 
-  IonToolbar, 
-  IonTitle, 
-  IonContent, 
-  IonInput, 
-  IonTextarea, 
-  IonButton 
-} from '@ionic/react';
-import { useHistory } from 'react-router-dom';
-import { Storage } from '@capacitor/storage';
-import CustomAlert from '../components/CustomAlert';
-import UploadAudio from '../components/UploadAudio';
+import React, { useState } from "react";
+import {
+  IonPage,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonInput,
+  IonTextarea,
+  IonButton,
+} from "@ionic/react";
+import { useHistory } from "react-router-dom";
+import {VoiceRecorder} from 'capacitor-voice-recorder';
+import CustomAlert from "../components/CustomAlert";
+import UploadAudio from "../components/UploadAudio";
+import dataManager from "../services/DataManager";
+import notificationService from "../services/NotificationService";
 
 const AddSloka = () => {
   const history = useHistory();
-  const [title, setTitle] = useState('');
-  const [slokaText, setSlokaText] = useState('');
-  const [mediaRecorder, setMediaRecorder] = useState(null);
-  const [audioUri, setAudioUri] = useState(null);
+  const [title, setTitle] = useState("");
+  const [slokaText, setSlokaText] = useState("");
+  const [, setAudioUri] = useState(null);
   const [alertVisible, setAlertVisible] = useState(false);
+  const [recordingStatus, setRecordingStatus] = useState("NONE")
+
+  
 
   const validateFields = () => {
-    if (!title || !slokaText) {
+    const trimmedTitle = title.trim();
+    const trimmedText = slokaText.trim();
+    if (!trimmedTitle || !trimmedText) {
       setAlertVisible(true);
       return false;
     }
     return true;
   };
 
+  // Start recording using native VoiceRecorder
   const startRecording = async () => {
-    if (!validateFields()) return;
+    console.log("startRecording called");
+    if (!validateFields()) {
+      console.log("Validation failed");
+      return;
+    }
+    
+    console.log("Starting native recording");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      const chunks = [];
+      // Request permission first
+      const permission = await VoiceRecorder.requestAudioRecordingPermission();
+      console.log("Permission result:", permission);
       
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunks.push(event.data);
+      if (permission.value === true) {
+        // Check if device can record
+        const canRecord = await VoiceRecorder.canDeviceVoiceRecord();
+        console.log("Can record result:", canRecord);
+        
+        if (canRecord.value === true) {
+          // Start recording
+          const result = await VoiceRecorder.startRecording();
+          console.log("Recording started:", result);
+          setRecordingStatus('RECORDING');
+        } else {
+          console.error("Device cannot record voice");
+          alert("Device cannot record voice");
         }
-      };
-      
-      recorder.onstop = async () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        const uri = URL.createObjectURL(blob);
-        setAudioUri(uri);
-        await saveSloka(uri);
-        // Stop all tracks
-        stream.getTracks().forEach(track => track.stop());
-      };
-      
-      recorder.start();
-      setMediaRecorder(recorder);
-    } catch (error) {
-      console.error('Error starting recording', error);
+      } else {
+        console.error("Microphone permission not granted");
+        alert("Microphone permission not granted");
+      }
+    } catch (e) {
+      console.error("Error starting native recording", e);
+      alert("Error starting recording: " + e.message);
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorder) {
-      mediaRecorder.stop();
-      setMediaRecorder(null);
+  function base64ToBlobUrl(base64Data, contentType = "audio/mp3") {
+    // Decode base64 string
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length);
+    
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
     }
+    
+    // Create a Uint8Array from the byte numbers
+    const byteArray = new Uint8Array(byteNumbers);
+    
+    // Create a Blob from the Uint8Array
+    const blob = new Blob([byteArray], { type: contentType });
+    
+    // Generate and return a Blob URL
+    return URL.createObjectURL(blob);
+  }
+
+  const stopRecording = () => {
+    console.log("stopRecording called");
+    console.log("Stopping native recording");
+    
+    VoiceRecorder.stopRecording()
+      .then((result) => {
+        console.log("Recording stopped:", result);
+        let uri = base64ToBlobUrl(result.value.recordDataBase64);
+        setAudioUri(uri);
+        saveSloka(uri);
+        setRecordingStatus('NONE');
+      })
+      .catch((error) => {
+        console.error("Error stopping recording:", error);
+        alert("Error stopping recording: " + error.message);
+        setRecordingStatus('NONE');
+      });
   };
 
   const saveSloka = async (audioUri) => {
@@ -75,61 +119,80 @@ const AddSloka = () => {
       text: slokaText,
       audioUri,
     };
-    const { value } = await Storage.get({ key: 'slokas' });
-    const slokas = value ? JSON.parse(value) : [];
-    slokas.push(newSloka);
-    console.log("Saving slokas:", slokas); // <-- Debug: Check saved slokas
-    await Storage.set({ key: 'slokas', value: JSON.stringify(slokas) });
-    history.goBack();
+    
+    const success = await dataManager.addSloka(newSloka);
+    if (success) {
+      notificationService.showSuccess('Sloka saved successfully!');
+      setTitle("");
+      setSlokaText("");
+      history.goBack();
+    } else {
+      notificationService.showError('Failed to save sloka. Please try again.');
+    }
   };
 
   return (
-    <IonPage>
+    <IonPage className="dark-bg">
       <IonHeader>
         <IonToolbar color="primary">
-          <IonTitle>Add Sloka</IonTitle>
+          <IonTitle className="header-title">Add Sloka</IonTitle>
         </IonToolbar>
       </IonHeader>
-
-      <IonContent className="ion-padding">
+      <IonContent
+        className="ion-padding dark-bg"
+        style={{ background: "#121212" }}
+      >
         <IonInput
-          placeholder="Title"
+          placeholder="Sloka Verse"
           value={title}
-          onIonChange={e => setTitle(e.detail.value)}
+          onIonInput={(e) => setTitle(e.detail.value || "")}
           clearInput
-          style={{ marginBottom: '12px', background: 'white', color: 'black', padding: '12px', borderRadius: '6px'}}
+          style={{
+            marginBottom: "12px",
+            background: "#FFFFFF",
+            color: "#000000",
+            padding: "12px",
+            borderRadius: "6px",
+            borderBottom: "0.5px solid grey",
+          }}
         />
         <IonTextarea
-          placeholder="Sloka Text"
+          placeholder="Sloka"
           value={slokaText}
-          onIonChange={e => setSlokaText(e.detail.value)}
+          onIonInput={(e) => setSlokaText(e.detail.value || "")}
           autoGrow
-          style={{ marginBottom: '12px', background: 'white', color: 'black', padding: '12px', borderRadius: '6px' }}
+          style={{
+            marginBottom: "12px",
+            background: "#FFFFFF",
+            color: "#000000",
+            padding: "0",
+            borderRadius: "6px",
+            borderBottom: "0.5px solid grey",
+          }}
         />
-        <IonButton 
-          expand="block" 
-          color={mediaRecorder ? 'danger' : 'primary'} 
-          onClick={mediaRecorder ? stopRecording : startRecording}
-          style={{ marginBottom: '8px' }}
+        <IonButton
+          expand="block"
+          color={recordingStatus==='RECORDING'? "danger" : "primary"}
+          onClick={recordingStatus==='RECORDING' ? stopRecording : startRecording}
+          style={{ marginBottom: "8px" }}
         >
-          {mediaRecorder ? 'Stop Recording' : '🎤 Record Audio'}
+          {recordingStatus==='RECORDING' ? "Stop" : "🎤 Record"}
         </IonButton>
-
-        {/* UploadAudio handles file picking */}
-        <UploadAudio 
-          validateFields={validateFields} 
-          setAudioUri={setAudioUri} 
-          saveSloka={saveSloka} 
+        <UploadAudio
+          validateFields={validateFields}
+          setAudioUri={setAudioUri}
+          saveSloka={saveSloka}
+          setTitle={setTitle}
+          setSlokaText={setSlokaText}
         />
-
         <CustomAlert
           visible={alertVisible}
           title="Missing Fields"
           message="Please fill all fields"
           buttons={[
             {
-              text: 'OK',
-              onPress: () => setAlertVisible(false),
+              text: "OK",
+              onClick: () => setAlertVisible(false),
             },
           ]}
         />
@@ -139,4 +202,3 @@ const AddSloka = () => {
 };
 
 export default AddSloka;
-

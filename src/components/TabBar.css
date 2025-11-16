@@ -1,8 +1,13 @@
-/* This style is for demonstration purposes only. */
-/* It's not required for the tabs to function. */
+/* 
 .example-content {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100%;
+} */
+
+.ion-tab-bar {
+  background-color: #1E1E1E !important;
+  padding-bottom: 20px;
+  
 }

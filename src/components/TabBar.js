@@ -4,7 +4,7 @@ import { IonReactRouter } from '@ionic/react-router';
 
 import { Route, Redirect } from 'react-router';
 
-import { playCircle, radio, library, search, home, addCircle, barChart, list } from 'ionicons/icons';
+import {home, addCircle, barChart, list } from 'ionicons/icons';
 
 import HomePage from '../pages/HomePage';
 import AddSloka from '../pages/AddSloka';
@@ -17,14 +17,23 @@ import Privacy from './Extra/Privacy'
 import Terms from './Extra/Terms'
 import Rate from './Extra/Rate'
 import Share from './Extra/Share'
+import Feedback from './Extra/Feedback'
+import './TabBar.css'
 
 function TabBar() {
+
+  const closeMenu = () => {
+    const menu = window.document.querySelector('ion-menu');
+    if (menu) {
+      menu.close();
+    }
+  };
+
   return (
     <IonApp>
 
-    
     <IonReactRouter>
-      <IonTabs>
+      <IonTabs >
         <IonRouterOutlet>
           <Redirect exact path="/" to="/home" />
           {/*
@@ -43,26 +52,25 @@ function TabBar() {
           <Route path="/home/donate" render={() => <Donate />} exact={true} />
           <Route path="/home/privacy" render={() => <Privacy />} exact={true} />
           <Route path="/home/terms" render={() => <Terms />} exact={true} />
-          <Route path="/home/feedback" render={() => <feedback />} exact={true} />
+          <Route path="/home/feedback" render={() => <Feedback />} exact={true} />
         </IonRouterOutlet>
-
-        <IonTabBar slot="bottom">
-          <IonTabButton tab="home" href="/home">
+        <IonTabBar className='ion-tab-bar' slot="bottom" color="primary" style={{}}>
+          <IonTabButton tab="home" href="/home" onClick={closeMenu}>
             <IonIcon icon={home} />
             <IonLabel>Home</IonLabel>
           </IonTabButton>
 
-          <IonTabButton tab="addSloka" href="/addSloka">
+          <IonTabButton tab="addSloka" href="/addSloka" onClick={closeMenu}>
             <IonIcon icon={addCircle} />
             <IonLabel>Add Sloka</IonLabel>
           </IonTabButton>
 
-          <IonTabButton tab="selectSloka" href="/selectSloka">
+          <IonTabButton tab="selectSloka" href="/selectSloka" onClick={closeMenu}>
             <IonIcon icon={barChart} />
-            <IonLabel>Select Sloka</IonLabel>
+            <IonLabel>Play the Sloka</IonLabel>
           </IonTabButton>
 
-          <IonTabButton tab="playlist" href="/playlist">
+          <IonTabButton tab="playlist" href="/playlist" onClick={closeMenu}>
             <IonIcon icon={list} />
             <IonLabel>Playlist</IonLabel>
           </IonTabButton>
