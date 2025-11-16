@@ -85,6 +85,39 @@ class DataManager {
       }
     }
     
+    // Remove sloka from all playlists
+    const playlists = await this.getPlaylists();
+    let playlistsUpdated = false;
+    const updatedPlaylists = playlists.map(playlist => {
+      // Remove the deleted sloka from playlist songs
+      const updatedSongs = playlist.songs.filter(song => song.id !== slokaId);
+      
+      // If songs array changed, mark as updated
+      if (updatedSongs.length !== playlist.songs.length) {
+        playlistsUpdated = true;
+        return {
+          ...playlist,
+          songs: updatedSongs
+        };
+      }
+      return playlist;
+    });
+    
+    // Filter out empty playlists (playlists with no songs)
+    const nonEmptyPlaylists = updatedPlaylists.filter(playlist => {
+      return playlist.songs && playlist.songs.length > 0;
+    });
+    
+    // If any playlists were updated or deleted, save them
+    if (playlistsUpdated || nonEmptyPlaylists.length !== playlists.length) {
+      const deletedCount = playlists.length - nonEmptyPlaylists.length;
+      if (deletedCount > 0) {
+        console.log(`Deleted ${deletedCount} empty playlist(s) after removing sloka`);
+      }
+      await this.savePlaylists(nonEmptyPlaylists);
+    }
+    
+    // Delete the sloka
     const filteredSlokas = slokas.filter(s => s.id !== slokaId);
     return await this.saveSlokas(filteredSlokas);
   }
