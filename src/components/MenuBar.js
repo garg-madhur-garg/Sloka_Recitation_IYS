@@ -92,7 +92,7 @@ function MenuBar() {
                 className="menu-item"
                 onClick={() =>
                   (window.location.href =
-                    "mailto:feedback@slokarecitation.com?subject=Feedback&body=Your feedback here")
+                    "mailto:slokarecitationiys@gmail.com?subject=Feedback&body=Your feedback here")
                 }
               >
                 <IonIcon icon={mailOutline} slot="start" />

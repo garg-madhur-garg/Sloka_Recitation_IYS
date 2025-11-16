@@ -11,6 +11,7 @@ import {
   IonBackButton,
   IonButtons,
   IonItemDivider,
+  IonSpinner,
 } from "@ionic/react";
 import { useHistory, useLocation } from "react-router-dom";
 import CustomAlert from "../components/CustomAlert";
@@ -50,6 +51,7 @@ const SlokaDetail = () => {
   const [alertVisible, setAlertVisible] = useState(false);
   const [sound, setSound] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Load audio from filesystem when component mounts or audioUri changes
   useEffect(() => {
@@ -215,6 +217,7 @@ const SlokaDetail = () => {
       return;
     }
 
+    setIsSaving(true);
     try {
       // If audioUri is a Blob URL, save it to filesystem first
       let finalAudioUri = audioUri;
@@ -248,6 +251,8 @@ const SlokaDetail = () => {
     } catch (error) {
       console.error("Error saving sloka:", error);
       notificationService.showError('Failed to save audio file. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -343,8 +348,15 @@ const SlokaDetail = () => {
           />
 
           {/* Save button to update the current sloka */}
-          <IonButton expand="block" color="secondary" onClick={saveChanges}>
-            💾 Save
+          <IonButton expand="block" color="secondary" onClick={saveChanges} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <IonSpinner name="crescent" style={{ marginRight: "8px" }} />
+                Saving...
+              </>
+            ) : (
+              "💾 Save"
+            )}
           </IonButton>
         </div>
         <CustomAlert

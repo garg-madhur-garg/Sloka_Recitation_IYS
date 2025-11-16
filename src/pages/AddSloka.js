@@ -8,6 +8,7 @@ import {
   IonInput,
   IonTextarea,
   IonButton,
+  IonSpinner,
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
 import {VoiceRecorder} from 'capacitor-voice-recorder';
@@ -23,7 +24,8 @@ const AddSloka = () => {
   const [slokaText, setSlokaText] = useState("");
   const [, setAudioUri] = useState(null);
   const [alertVisible, setAlertVisible] = useState(false);
-  const [recordingStatus, setRecordingStatus] = useState("NONE")
+  const [recordingStatus, setRecordingStatus] = useState("NONE");
+  const [isSaving, setIsSaving] = useState(false);
 
   
 
@@ -107,13 +109,17 @@ const AddSloka = () => {
       setAudioUri(tempUri);
       
       // Save sloka with audio (will save to filesystem)
+      setIsSaving(true);
+      setRecordingStatus('NONE');
       const slokaId = Date.now().toString();
       await saveSloka(tempUri, slokaId, result.value.recordDataBase64);
-      setRecordingStatus('NONE');
     } catch (error) {
       console.error("Error stopping recording:", error);
       alert("Error stopping recording: " + error.message);
       setRecordingStatus('NONE');
+      setIsSaving(false);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -195,15 +201,21 @@ const AddSloka = () => {
           color={recordingStatus==='RECORDING'? "danger" : "primary"}
           onClick={recordingStatus==='RECORDING' ? stopRecording : startRecording}
           style={{ marginBottom: "8px" }}
+          disabled={isSaving}
         >
-          {recordingStatus==='RECORDING' ? "Stop" : "🎤 Record"}
+          {isSaving ? (
+            <>
+              <IonSpinner name="crescent" style={{ marginRight: "8px" }} />
+              Saving...
+            </>
+          ) : recordingStatus==='RECORDING' ? "Stop" : "🎤 Record"}
         </IonButton>
         <UploadAudio
           validateFields={validateFields}
           setAudioUri={setAudioUri}
-          saveSloka={(uri, fileName) => {
+          saveSloka={async (uri, fileName) => {
             const slokaId = Date.now().toString();
-            saveSloka(uri, slokaId, null, fileName);
+            await saveSloka(uri, slokaId, null, fileName);
           }}
           setTitle={setTitle}
           setSlokaText={setSlokaText}
