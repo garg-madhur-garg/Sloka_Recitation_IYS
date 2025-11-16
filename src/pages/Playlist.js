@@ -13,9 +13,10 @@ import {
   IonInput,
   IonText,
   IonIcon,
+  IonCheckbox,
   useIonViewDidEnter,
 } from "@ionic/react";
-import { trash, arrowUp, arrowDown} from "ionicons/icons";
+import { trash, arrowUp, arrowDown, add} from "ionicons/icons";
 import { useHistory } from "react-router-dom";
 import CustomAlert from "../components/CustomAlert";
 import dataManager from "../services/DataManager";
@@ -32,6 +33,7 @@ const Playlist = () => {
   // Playback state
   const [playingPlaylistId, setPlayingPlaylistId] = useState(null);
   const [currentAudio, setCurrentAudio] = useState(null);
+  const [currentPlayingSongId, setCurrentPlayingSongId] = useState(null);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
 
@@ -82,6 +84,21 @@ const Playlist = () => {
 
   // Update a specific playlist in storage
   const updatePlaylist = async (updatedPlaylist) => {
+    // If this playlist is currently playing, check if the currently playing song was removed
+    if (playingPlaylistId === updatedPlaylist.id && currentPlayingSongId) {
+      const songStillExists = updatedPlaylist.songs && updatedPlaylist.songs.some(s => s.id === currentPlayingSongId);
+      if (!songStillExists) {
+        // Currently playing song was deleted, stop playback
+        if (currentAudio) {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+          setCurrentAudio(null);
+        }
+        setPlayingPlaylistId(null);
+        setCurrentPlayingSongId(null);
+      }
+    }
+    
     const success = await dataManager.updatePlaylist(updatedPlaylist);
     if (success) {
       const updated = playlists.map((pl) =>
@@ -95,6 +112,16 @@ const Playlist = () => {
 
   // Delete a playlist
   const deletePlaylist = async (playlistId) => {
+    // Stop audio if this playlist is currently playing
+    if (playingPlaylistId === playlistId) {
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        setCurrentAudio(null);
+      }
+      setPlayingPlaylistId(null);
+    }
+    
     const success = await dataManager.deletePlaylist(playlistId);
     if (success) {
       const updated = playlists.filter((pl) => pl.id !== playlistId);
@@ -116,6 +143,7 @@ const Playlist = () => {
         setCurrentAudio(null);
       }
       setPlayingPlaylistId(null);
+      setCurrentPlayingSongId(null);
     } else {
       // Stop any existing playback (including AudioManager audio)
       audioManager.stopAudio();
@@ -131,12 +159,39 @@ const Playlist = () => {
       }
       setPlayingPlaylistId(playlist.id);
       let index = 0;
+      const playlistIdRef = playlist.id; // Capture playlist ID for closure
       const playNext = async () => {
-        if (index >= playlist.songs.length) {
+        // Get current playlist to check songs - use playlists state
+        const currentPlaylist = playlists.find(p => p.id === playlistIdRef);
+        if (!currentPlaylist || !currentPlaylist.songs || currentPlaylist.songs.length === 0) {
+          setPlayingPlaylistId(null);
+          setCurrentPlayingSongId(null);
+          if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.currentTime = 0;
+            setCurrentAudio(null);
+          }
+          return;
+        }
+        
+        if (index >= currentPlaylist.songs.length) {
           index = 0; // loop back
         }
         try {
-          const song = playlist.songs[index];
+          const song = currentPlaylist.songs[index];
+          if (!song) {
+            setPlayingPlaylistId(null);
+            setCurrentPlayingSongId(null);
+            if (currentAudio) {
+              currentAudio.pause();
+              currentAudio.currentTime = 0;
+              setCurrentAudio(null);
+            }
+            return;
+          }
+          
+          setCurrentPlayingSongId(song.id);
+          
           // Load audio from filesystem if needed
           let playableUri = song.audioUri;
           if (audioStorage.isFileSystemPath(song.audioUri)) {
@@ -144,6 +199,7 @@ const Playlist = () => {
             if (!playableUri) {
               console.error("Failed to load audio from filesystem");
               setPlayingPlaylistId(null);
+              setCurrentPlayingSongId(null);
               return;
             }
           }
@@ -153,6 +209,7 @@ const Playlist = () => {
           audio.play().catch((err) => {
             console.error(err);
             setPlayingPlaylistId(null);
+            setCurrentPlayingSongId(null);
           });
           audio.onended = () => {
             index++;
@@ -161,6 +218,7 @@ const Playlist = () => {
         } catch (error) {
           console.error("Error playing song:", error);
           setPlayingPlaylistId(null);
+          setCurrentPlayingSongId(null);
         }
       };
       playNext();
@@ -301,11 +359,31 @@ const PlaylistDetail = ({
 }) => {
   const [name, setName] = useState(playlist.name);
   const [songs, setSongs] = useState(playlist.songs);
+  const [showAddSlokasModal, setShowAddSlokasModal] = useState(false);
+  const [allSlokas, setAllSlokas] = useState([]);
+  const [selectedSlokas, setSelectedSlokas] = useState([]);
 
   useEffect(() => {
     setName(playlist.name);
     setSongs(playlist.songs);
   }, [playlist]);
+
+  // Load all slokas when add slokas modal opens
+  useEffect(() => {
+    if (showAddSlokasModal) {
+      const loadSlokas = async () => {
+        const slokas = await dataManager.getSlokas();
+        console.log("Loaded slokas for add modal:", slokas);
+        // Filter out slokas that are already in the playlist
+        const existingSlokaIds = songs.map(s => s.id);
+        const availableSlokas = slokas.filter(s => !existingSlokaIds.includes(s.id));
+        console.log("Available slokas after filtering:", availableSlokas);
+        setAllSlokas(availableSlokas);
+        setSelectedSlokas([]);
+      };
+      loadSlokas();
+    }
+  }, [showAddSlokasModal, songs]);
 
   const saveChanges = () => {
     // Force blur to ensure that any pending input is committed to state
@@ -361,6 +439,32 @@ const PlaylistDetail = ({
     setSongs(newSongs);
   };
 
+  // Toggle sloka selection for adding to playlist
+  const toggleSlokaSelection = (slokaId) => {
+    setSelectedSlokas(prev => {
+      if (prev.includes(slokaId)) {
+        return prev.filter(id => id !== slokaId);
+      } else {
+        return [...prev, slokaId];
+      }
+    });
+  };
+
+  // Add selected slokas to playlist
+  const addSelectedSlokas = () => {
+    if (selectedSlokas.length === 0) {
+      notificationService.showError('Please select at least one sloka to add');
+      return;
+    }
+
+    const slokasToAdd = allSlokas.filter(s => selectedSlokas.includes(s.id));
+    const updatedSongs = [...songs, ...slokasToAdd];
+    setSongs(updatedSongs);
+    setShowAddSlokasModal(false);
+    setSelectedSlokas([]);
+    notificationService.showSuccess(`${slokasToAdd.length} sloka(s) added to playlist`);
+  };
+
   return (
     <>
       <IonHeader>
@@ -386,29 +490,81 @@ const PlaylistDetail = ({
         <IonButton expand="block" onClick={saveChanges} >
           Save
         </IonButton>
-        {/* <IonItemDivider>
-          <IonLabel>Songs</IonLabel>
-        </IonItemDivider> */}
-        {/* <IonButton expand="block" onClick={addSong}>
+        <IonButton expand="block" color="secondary" onClick={() => setShowAddSlokasModal(true)}>
           <IonIcon slot="start" icon={add} />
-          Add Song
-        </IonButton> */}
+          Add Slokas
+        </IonButton>
         <IonList>
           {songs.map((song, index) => (
             <IonItem key={song.id}>
               <IonLabel style={{ color: "Black" }}>{song.title}</IonLabel>
-              <IonButton onClick={() => moveSongUp(index)}>
-                <IonIcon slot="icon-only" icon={arrowUp} />
-              </IonButton>
-              <IonButton onClick={() => moveSongDown(index)}>
-                <IonIcon slot="icon-only" icon={arrowDown} />
-              </IonButton>
+              {index > 0 && (
+                <IonButton onClick={() => moveSongUp(index)}>
+                  <IonIcon slot="icon-only" icon={arrowUp} />
+                </IonButton>
+              )}
+              {index < songs.length - 1 && (
+                <IonButton onClick={() => moveSongDown(index)}>
+                  <IonIcon slot="icon-only" icon={arrowDown} />
+                </IonButton>
+              )}
               <IonButton color="danger" onClick={() => deleteSong(song.id)}>
                 <IonIcon slot="icon-only" icon={trash} />
               </IonButton>
             </IonItem>
           ))}
         </IonList>
+
+        {/* Modal for adding slokas */}
+        <IonModal isOpen={showAddSlokasModal} onDidDismiss={() => setShowAddSlokasModal(false)}>
+          <IonHeader>
+            <IonToolbar color="primary">
+              <IonTitle style={{ color: "#FFFFFF" }}>Add Slokas to Playlist</IonTitle>
+              <IonButton slot="end" onClick={() => setShowAddSlokasModal(false)}>
+                Close
+              </IonButton>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent className="ion-padding" style={{ background: "#121212" }}>
+            {allSlokas.length === 0 ? (
+              <IonText color="medium" style={{ display: "block", textAlign: "center", marginTop: "20px" }}>
+                No slokas available to add. All slokas are already in this playlist.
+              </IonText>
+            ) : (
+              <>
+                <IonList>
+                  {allSlokas.map((sloka) => {
+                    console.log("Rendering sloka:", sloka);
+                    return (
+                      <IonItem 
+                        key={sloka.id} 
+                        lines="full"
+                        style={{ 
+                          background: "#1E1E1E", 
+                          marginBottom: "4px",
+                          "--color": "white",
+                          "--background": "#1E1E1E"
+                        }}
+                      >
+                        <IonCheckbox
+                          checked={selectedSlokas.includes(sloka.id)}
+                          onIonChange={() => toggleSlokaSelection(sloka.id)}
+                          slot="start"
+                        />
+                        <IonLabel style={{ color: "white", fontSize: "16px" }}>
+                          {sloka.title || sloka.name || "Untitled Sloka"}
+                        </IonLabel>
+                      </IonItem>
+                    );
+                  })}
+                </IonList>
+                <IonButton expand="block" color="primary" onClick={addSelectedSlokas} style={{ marginTop: "20px" }}>
+                  Add Selected Slokas ({selectedSlokas.length})
+                </IonButton>
+              </>
+            )}
+          </IonContent>
+        </IonModal>
       </IonContent>
     </>
   );

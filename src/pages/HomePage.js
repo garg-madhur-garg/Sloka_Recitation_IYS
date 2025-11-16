@@ -19,6 +19,7 @@ import CustomAlert from "../components/CustomAlert";
 import MenuBar from "../components/MenuBar";
 import IYSImage from "../assets/IYS2.png";
 import dataManager from "../services/DataManager";
+import audioManager from "../services/AudioManager";
 
 const HomePage = ({ history }) => {
   const [slokas, setSlokas] = useState([]);
@@ -73,6 +74,12 @@ const HomePage = ({ history }) => {
   // Delete functionality
   const deleteSloka = useCallback(
     async (id) => {
+      // Stop audio if it's currently playing for this sloka
+      if (audioManager.isPlaying(id)) {
+        audioManager.stopAudio();
+        setCurrentPlayingId(null);
+      }
+      
       const success = await dataManager.deleteSloka(id);
       if (success) {
         const updatedSlokas = slokas.filter((sloka) => sloka.id !== id);
